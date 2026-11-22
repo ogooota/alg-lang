@@ -83,25 +83,27 @@ The same nine problems in each language. Each number says how many times longer 
 | # | language | time vs alg |
 |---|---|---|
 | 1 | **alg -O** | **1.00×** |
-| 2 | C -O2 | 1.25× |
-| 3 | Rust (opt-level 3) | 1.26× |
-| 4 | C++ -O2 | 1.85× |
-| 5 | JavaScript (Node 24) | 3.13× |
-| 6 | Python 3.12 | 19.6× |
+| 2 | C -O2 | 1.31× |
+| 3 | Rust (opt-level 3) | 1.34× |
+| 4 | C++ -O2 | 2.00× |
+| 5 | JavaScript (Node 24) | 3.33× |
+| 6 | Python 3.12 | 20.3× |
 
 Per problem (alg's own time, then the time of each language relative to alg; below 1.00× means faster than alg):
 
 | problem | alg -O | C | Rust | C++ | JS | Python |
 |---|---|---|---|---|---|---|
-| sort 10⁶ integers | 0.058 s | 3.36× | 1.26× | 3.22× | 7.84× | 22.3× |
-| prefix sums, 10⁶ queries | 0.193 s | 1.40× | 1.20× | 2.32× | 3.28× | 9.69× |
-| sieve up to 2·10⁷ | 0.190 s | 0.93× | 0.96× | 0.94× | 1.50× | 10.4× |
-| 0/1 knapsack | 0.042 s | 1.86× | 3.55× | 1.86× | 5.76× | 606× |
-| recursive fib(38) | 0.095 s | 1.06× | 1.31× | 1.01× | 6.91× | 73.5× |
-| union-find, 10⁶ operations | 0.150 s | 1.35× | 1.07× | 2.15× | 2.02× | 14.3× |
-| count 10⁶ values with a map | 0.119 s | 0.91× | 0.93× | 2.50× | 2.45× | 4.10× |
-| Dijkstra, 10⁵ vertices, 10⁶ edges | 0.155 s | 1.05× | 2.12× | 3.06× | 1.83× | 28.1× |
-| count 10⁶ words | 0.537 s | 0.65× | 0.59× | 1.17× | 2.06× | 2.63× |
+| sort 10⁶ integers | 0.057 s | 3.44× | 1.30× | 3.28× | 7.95× | 22.1× |
+| prefix sums, 10⁶ queries | 0.204 s | 1.19× | 1.06× | 2.25× | 2.85× | 8.70× |
+| sieve up to 2·10⁷ | 0.182 s | 0.96× | 0.98× | 0.99× | 1.54× | 10.8× |
+| 0/1 knapsack | 0.042 s | 1.79× | 3.50× | 1.81× | 5.69× | 594× |
+| recursive fib(38) | 0.094 s | 1.06× | 1.31× | 0.98× | 6.82× | 70.1× |
+| union-find, 10⁶ operations | 0.144 s | 1.17× | 1.06× | 2.14× | 2.03× | 14.6× |
+| count 10⁶ values with a map | 0.110 s | 1.01× | 0.98× | 2.59× | 2.50× | 4.21× |
+| Dijkstra, 10⁵ vertices, 10⁶ edges | 0.144 s | 1.10× | 2.01× | 3.18× | 1.85× | 21.8× |
+| count 10⁶ words | 0.265 s | 1.15× | 1.11× | 2.29× | 3.96× | 5.00× |
+
+The sieve row is the same hand-written loop in every language. alg's built-in `sieve(n)` (segmented, mod-30 wheel, after primesieve) lists the primes up to 2·10⁷ in 0.021 s, about 10× faster than that loop.
 
 The C, Rust and JS versions use a fast input reader. The C++ versions use plain `cin` with `sync_with_stdio(false)`.
 

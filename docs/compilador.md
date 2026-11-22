@@ -76,14 +76,17 @@ Cada arquivo é um template: o gerador define macros e inclui o texto uma vez po
 ## Strings
 
 - Uma string é um `ArrayU8` (vetor 1D de `TYPE_CHAR`); `is_string`/`is_text_type` reconhecem esse tipo.
-- Dentro de vetor, heap, fila ou mapa a célula tem tipo `TYPE_STRING` e vira o template `ArrayStr`
-  (`STRING_ELEMENT`, `KIND 3`). Guardar copia (`array_u8_copy`), e ler a célula devolve uma string nova (`value_of_cell`).
+- Dentro de vetor, heap, fila ou mapa a célula tem tipo `TYPE_STRING` e é guardada como `Str`, de 16 bytes, no formato das strings do Umbra (Neumann e Freitag, CIDR 2020).
+  - Formato: tamanho, os 4 primeiros bytes e um ponteiro (`STRING_ELEMENT`, `KIND 3`).
+  - Guardar: `str_pack` copia o texto.
+  - Ler: `str_unpack` devolve uma view com `capacity = length`, então o primeiro `add` realoca.
+  - Comparar: tamanho e prefixo num único load de 64 bits decidem a maioria dos casos sem seguir o ponteiro.
+  - Ganho com 10⁶ palavras: de 0,54 s e 135 MB para 0,28 s e 68 MB.
 - `rt/string.h` entra logo depois do template `ArrayU8`. Ele tem leitura de palavra e de linha, escrita, comparação, hash FNV-1a e junção.
-- `str_sort` tem três fases:
-  1. radix LSD sobre os 8 primeiros bytes (big-endian), pulando os bytes iguais em todas as chaves;
-  2. inserção só nos blocos de prefixo igual;
-  3. permutação no lugar pelos ciclos.
-  Medido: 0,81× o tempo do `std::sort` de `vector<string>`, com 10⁶ palavras.
+- `str_sort` usa `order_sort` (`core.h`) e faz a permutação no lugar pelos ciclos.
+  - `order_sort` faz radix LSD sobre um prefixo de 64 bits que preserva a ordem, pulando os bytes iguais em todas as chaves.
+  - O desempate só acontece nos blocos de prefixo igual: inserção até 16 itens, `qsort` acima disso, nunca O(n²).
+  - Medido: 0,81× o tempo do `std::sort` de `vector<string>`, com 10⁶ palavras.
 - `read_line` logo depois de um número pula o resto vazio da linha (`input_after_token`), como o `getline` depois de `cin >> ws` faria.
 
 
@@ -98,3 +101,35 @@ Cada arquivo é um template: o gerador define macros e inclui o texto uma vez po
 - **Unroll:** o `unroll-loops` do `-O` fica.
   - Ganho de 10% nos laços vetorizados (redução, mochila).
   - Nos outros benchmarks, a diferença ficou dentro de ±3%, que é ruído.
+
+## Mapa (rt/map.h)
+
+- **Layout:**
+  - Uma struct `{chave, valor}` por posição: a busca que acha a chave já traz o valor para o cache.
+  - Um byte de controle por posição: 0 vazia, 1 removida, `0x80 | 7 bits do hash` quando ocupada. A ideia vem da SwissTable do Abseil; a sondagem só compara a chave quando os 7 bits batem.
+- **`m[k] op= x`** gera uma busca só (`gen_stmt.c`, `cached_map_index`). Antes eram duas: `get` e `ref`.
+- **`for (k, v) in m`** usa `_entries`:
+  - Copia os pares numa passada sequencial e ordena com `order_sort` pelo `ORDER_PREFIX`: inteiro com o sinal invertido, ou os 8 bytes do texto. Chaves tupla e real não têm prefixo e caem no `qsort`.
+  - O valor sai da foto enquanto `map->writes` não muda, ou seja, enquanto o corpo não chama `_ref` nem `_del`. Se mudar, o valor é buscado de novo, como antes.
+
+## Crivo (`sieve`, rt/core.h)
+
+O desenho segue o primesieve (Kim Walisch, `doc/ALGORITHMS.md`):
+- **Roda módulo 30:** o byte b guarda 30b + {1, 7, 11, 13, 17, 19, 23, 29}, um bit cada. Múltiplos de 2, 3 e 5 não existem no vetor.
+- **Segmentos de 32 KB**, o tamanho do L1.
+- **Pré-crivo:** um padrão de 17.017 bytes com os múltiplos de 7, 11, 13 e 17 já riscados é copiado para cada segmento.
+- **Riscar:** o múltiplo p·q com q = 30t + r_k fica no byte p·t + ⌊p·r_k/30⌋. Cada primo guarda os 8 deslocamentos e as 8 máscaras de uma volta, e o laço desenrolado risca 8 de uma vez e avança p bytes.
+- **Extrair:** 8 bytes por vez com `ctz`. O vetor de saída é reservado por π(x) < 1,25506·x/ln x (Rosser e Schoenfeld), sem crescer.
+- **Medido:**
+
+| limite | crivo ingênuo | só ímpares, 1 bit | roda 30 |
+|---|---|---|---|
+| 2·10⁷ | 0,203 s | 0,031 s | **0,021 s** |
+| 10⁸ | 1,065 s | 0,134 s | **0,092 s** |
+| 10⁹ | | 1,429 s | **0,929 s** |
+
+Em 10⁹, a maior parte do tempo é gravar 50,8 milhões de inteiros (406 MB).
+- **Não feito:**
+  - Buckets de Oliveira e Silva para primos grandes: só compensam com limites acima de ~10¹⁰, que não cabem num vetor de saída.
+  - Pré-crivo com SIMD até 163.
+
