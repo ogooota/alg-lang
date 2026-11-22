@@ -1,0 +1,966 @@
+<title>Guia do alg</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+  /* Layout: coluna de leitura estreita; nos problemas, alg e C++ lado a lado (empilham no celular) */
+  :root {
+    --bg: #f7f6fb;
+    --surface: #ffffff;
+    --code-bg: #f1eff8;
+    --line: #e2deee;
+    --fg: #1d1b26;
+    --muted: #625f75;
+    --accent: #7440c9;
+    --accent-soft: #ece4fa;
+    --cpp: #9a5b1a;
+    --hl-keyword: #8a3fcf;
+    --hl-flow: #c2560b;
+    --hl-builtin: #0f7f73;
+    --hl-method: #2f5fd0;
+    --hl-type: #9a6a00;
+    --hl-number: #c0392b;
+    --hl-string: #4d7f17;
+    --hl-comment: #8a879c;
+    --font-display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+    --font-body: "Inter", "Segoe UI", system-ui, sans-serif;
+    --font-code: "JetBrains Mono", "Cascadia Code", ui-monospace, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #16161e;
+      --surface: #1d1d28;
+      --code-bg: #1f2029;
+      --line: #2e2f40;
+      --fg: #dcdae6;
+      --muted: #9a98ad;
+      --accent: #c49af0;
+      --accent-soft: #2c2340;
+      --cpp: #e0a46a;
+      --hl-keyword: #c792ea;
+      --hl-flow: #ff9e64;
+      --hl-builtin: #7fd1c7;
+      --hl-method: #82aaff;
+      --hl-type: #ffcb6b;
+      --hl-number: #f78c6c;
+      --hl-string: #c3e88d;
+      --hl-comment: #6c6f85;
+      color-scheme: dark;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #16161e;
+    --surface: #1d1d28;
+    --code-bg: #1f2029;
+    --line: #2e2f40;
+    --fg: #dcdae6;
+    --muted: #9a98ad;
+    --accent: #c49af0;
+    --accent-soft: #2c2340;
+    --cpp: #e0a46a;
+    --hl-keyword: #c792ea;
+    --hl-flow: #ff9e64;
+    --hl-builtin: #7fd1c7;
+    --hl-method: #82aaff;
+    --hl-type: #ffcb6b;
+    --hl-number: #f78c6c;
+    --hl-string: #c3e88d;
+    --hl-comment: #6c6f85;
+    color-scheme: dark;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font: 16px/1.65 var(--font-body);
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 0 4rem;
+  }
+
+  main {
+    max-width: 1080px;
+    margin: 0 auto;
+  }
+
+  .prose {
+    max-width: 68ch;
+  }
+
+  header {
+    padding-block: 3.5rem 2rem;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 2.5rem;
+  }
+
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    text-wrap: balance;
+    line-height: 1.15;
+  }
+
+  h1 {
+    font-size: clamp(2.2rem, 6vw, 3.4rem);
+    margin: 0 0 0.75rem;
+    letter-spacing: -0.02em;
+  }
+
+  h1 code {
+    color: var(--accent);
+    font-family: var(--font-code);
+    font-weight: 600;
+  }
+
+  .lead {
+    font-size: 1.15rem;
+    color: var(--muted);
+    margin: 0;
+  }
+
+  h2 {
+    font-size: 1.7rem;
+    margin: 3.5rem 0 0.75rem;
+  }
+
+  h3 {
+    font-size: 1.2rem;
+    margin: 0 0 0.25rem;
+  }
+
+  .eyebrow {
+    font: 600 0.75rem/1 var(--font-body);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.5rem;
+  }
+
+  nav.toc {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+  }
+
+  nav.toc a {
+    font-size: 0.9rem;
+    color: var(--fg);
+    text-decoration: none;
+    padding: 0.3rem 0.7rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--surface);
+  }
+
+  nav.toc a:hover,
+  nav.toc a:focus-visible {
+    border-color: var(--accent);
+    color: var(--accent);
+    outline: none;
+  }
+
+  code {
+    font-family: var(--font-code);
+    font-size: 0.92em;
+    background: var(--code-bg);
+    padding: 0.1em 0.35em;
+    border-radius: 4px;
+  }
+
+  pre {
+    margin: 0;
+    padding: 1rem 1.1rem;
+    background: var(--code-bg);
+    border-radius: 8px;
+    overflow-x: auto;
+    font: 0.86rem/1.6 var(--font-code);
+    tab-size: 4;
+  }
+
+  pre code {
+    background: none;
+    padding: 0;
+    font-size: inherit;
+  }
+
+  .kw { color: var(--hl-keyword); }
+  .flow { color: var(--hl-flow); font-weight: 600; }
+  .bi { color: var(--hl-builtin); }
+  .me { color: var(--hl-method); }
+  .ty { color: var(--hl-type); }
+  .nu { color: var(--hl-number); }
+  .st { color: var(--hl-string); }
+  .co { color: var(--hl-comment); font-style: italic; }
+  .di { color: var(--hl-method); font-weight: 600; }
+
+  .problem {
+    margin-top: 2.75rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--line);
+  }
+
+  .problem p {
+    margin: 0.4rem 0 1rem;
+    max-width: 75ch;
+  }
+
+  .compare {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+    gap: 1rem;
+  }
+
+  .compare > figure {
+    margin: 0;
+    min-width: 0;
+  }
+
+  figcaption {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-bottom: 0.35rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  figcaption strong {
+    font-family: var(--font-code);
+    font-size: 0.85rem;
+    color: var(--accent);
+  }
+
+  figure.cpp figcaption strong {
+    color: var(--cpp);
+  }
+
+  .notes {
+    margin: 0.9rem 0 0;
+    padding-left: 1.1rem;
+    color: var(--muted);
+    font-size: 0.93rem;
+  }
+
+  .notes li + li {
+    margin-top: 0.3rem;
+  }
+
+  .table-wrap {
+    overflow-x: auto;
+    margin-top: 1rem;
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 560px;
+    font-size: 0.92rem;
+  }
+
+  th, td {
+    text-align: left;
+    padding: 0.55rem 0.75rem;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+
+  th {
+    font: 600 0.75rem/1.2 var(--font-body);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  td.num {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .callout {
+    margin-top: 1rem;
+    padding: 1rem 1.2rem;
+    background: var(--accent-soft);
+    border-radius: 8px;
+    max-width: 75ch;
+  }
+
+  .callout p {
+    margin: 0;
+  }
+
+  .grid-basics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .grid-basics > div {
+    min-width: 0;
+  }
+
+  .grid-basics h3 {
+    font-size: 1rem;
+    margin-bottom: 0.4rem;
+  }
+
+  footer {
+    margin-top: 4rem;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  a {
+    color: var(--accent);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    nav.toc a {
+      transition: border-color 0.15s, color 0.15s;
+    }
+  }
+</style>
+
+<main>
+  <header>
+    <div class="eyebrow">linguagem para maratona de programação</div>
+    <h1>Guia do <code>alg</code></h1>
+    <p class="lead prose">O alg se lê como o pseudocódigo do livro e compila para C. Você escreve o algoritmo; ele cuida da leitura rápida da entrada, do <code>long long</code>, do resto negativo e da estrutura de dados certa. Cada exemplo abaixo traz a mesma solução em C++ ao lado, para você ver o que deixa de escrever.</p>
+    <nav class="toc" aria-label="Seções">
+      <a href="#rodar">Rodar</a>
+      <a href="#basico">O básico</a>
+      <a href="#prefixo">Soma de intervalo</a>
+      <a href="#mochila">Mochila</a>
+      <a href="#atividades">Guloso com ordenação</a>
+      <a href="#busca">Busca binária</a>
+      <a href="#frequencia">Contagem</a>
+      <a href="#bfs">BFS</a>
+      <a href="#dijkstra">Dijkstra</a>
+      <a href="#traducao">Tradução C++ → alg</a>
+      <a href="#armadilhas">Armadilhas</a>
+      <a href="#desempenho">Desempenho</a>
+    </nav>
+  </header>
+
+  <section id="rodar" class="prose">
+    <div class="eyebrow">antes de tudo</div>
+    <h2>Rodar um programa</h2>
+    <p>O arquivo tem extensão <code>.alg</code>. A primeira linha diz o idioma das palavras-chave: <code>#lang pt</code> ou <code>#lang en</code>.</p>
+<pre><code class="lang-sh">./alg sol.alg                 # compila e roda; digite a entrada
+./alg sol.alg &lt; entrada.txt   # ou mande um arquivo
+./alg -O -o sol sol.alg       # executável rápido, sem checagens (para submeter)
+./alg -O --emit-c sol.alg     # mostra o C gerado (dá para enviar ao juiz como C)</code></pre>
+    <p>Sem <code>-O</code>, índice fora do vetor, divisão por zero e estrutura vazia viram erro com a linha: <code>erro (linha 12): índice 7 fora de 0..5</code>. Com <code>-O</code> essas checagens saem e o código fica tão rápido quanto C.</p>
+  </section>
+
+  <section id="basico">
+    <div class="eyebrow">sintaxe</div>
+    <h2>O básico em uma tela</h2>
+    <p class="prose">Blocos são por indentação, como em Python. Não há tipos para declarar: <code>x = 5</code> cria um inteiro de 64 bits. Comentário é <code>//</code>, e o <code>;</code> no fim é opcional.</p>
+    <div class="grid-basics">
+      <div>
+        <h3>Entrada e saída</h3>
+<pre><code class="lang-alg">ler(n, m)          // lê dois inteiros
+ler(v[0..n])       // cria v e lê n valores
+ler(grade[0..n][0..m])
+escrever(a, b, v)  // separa por espaço, quebra a linha</code></pre>
+      </div>
+      <div>
+        <h3>Laços e condições</h3>
+<pre><code class="lang-alg">para i=0 ate n:       // 0, 1, ..., n-1
+para i=1 ate em n:    // 1, 2, ..., n
+para x em v:          // cada elemento
+enquanto lo &lt; hi:
+se x &gt; 0 e nao feito:
+senao se x == 0:
+senao:</code></pre>
+      </div>
+      <div>
+        <h3>Funções</h3>
+<pre><code class="lang-alg">quadrado(x) = x * x
+
+fn fib(k):
+    se k &lt; 2:
+        ret k
+    ret fib(k - 1) + fib(k - 2)</code></pre>
+      </div>
+      <div>
+        <h3>Atualizar valores</h3>
+<pre><code class="lang-alg">x += 5      // também -= *= /= %= &amp;= |= ^= &lt;&lt;= &gt;&gt;=
+inc i       // i++
+dec i       // i--
+(a, b) = (b, a)   // troca com tupla</code></pre>
+      </div>
+      <div>
+        <h3>Vetores declarados antes</h3>
+<pre><code class="lang-alg">#decl
+    dp[n + 1][m + 1];   // criado no 1º uso, zerado
+    visitado[n];
+ler(n, m)               // n pode vir depois</code></pre>
+      </div>
+      <div>
+        <h3>Estruturas prontas</h3>
+<pre><code class="lang-alg">v = {}         v.adicionar(x)
+h = heap()     h.inserir((d, u))
+f = fila()     f.enfileirar(u)
+m = mapa {}    m[chave] += 1
+g = grafo(n)   g.aresta(u, v, peso)
+ordenar(v)     ordenar(v, maior)</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <h2 id="problemas">Problemas de maratona, lado a lado</h2>
+  <p class="prose">As soluções em alg foram compiladas e testadas com as entradas de exemplo. As versões em C++ são as que um competidor escreve no dia a dia (com <code>sync_with_stdio(false)</code>).</p>
+
+  <section class="problem" id="prefixo">
+    <div class="eyebrow">soma de prefixos · O(n + q)</div>
+    <h3>Soma de intervalo</h3>
+    <p>Dado um vetor de <var>n</var> números, responda <var>q</var> perguntas "quanto dá a soma de <var>a[l..r]</var>?" (posições a partir de 1). Entrada: <code>5 3 / 1 2 3 4 5 / 1 5 / 2 3 / 4 4</code> → <code>15 5 4</code>.</p>
+    <div class="compare">
+      <figure>
+        <figcaption><strong>alg</strong><span>8 linhas</span></figcaption>
+<pre><code class="lang-alg">#lang pt
+#decl pre[n + 1];
+
+ler(n, q, a[0..n])
+para i=0 ate n:
+    pre[i + 1] = pre[i] + a[i]
+para k=0 ate q:
+    ler(l, r)
+    escrever(pre[r] - pre[l - 1])</code></pre>
+      </figure>
+      <figure class="cpp">
+        <figcaption><strong>C++</strong><span>17 linhas</span></figcaption>
+<pre><code class="lang-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n, q;
+    cin &gt;&gt; n &gt;&gt; q;
+    vector&lt;long long&gt; a(n), pre(n + 1, 0);
+    for (auto &amp;x : a) cin &gt;&gt; x;
+    for (int i = 0; i &lt; n; i++)
+        pre[i + 1] = pre[i] + a[i];
+    while (q--) {
+        int l, r;
+        cin &gt;&gt; l &gt;&gt; r;
+        cout &lt;&lt; pre[r] - pre[l - 1] &lt;&lt; '\n';
+    }
+}</code></pre>
+      </figure>
+    </div>
+    <ul class="notes">
+      <li><code>#decl pre[n + 1]</code> aparece antes de <code>n</code> ser lido: o vetor só é criado (zerado) no primeiro uso.</li>
+      <li>Todo inteiro já é de 64 bits, então a soma não estoura como estouraria com <code>int</code>.</li>
+    </ul>
+  </section>
+
+  <section class="problem" id="mochila">
+    <div class="eyebrow">programação dinâmica · O(n · W)</div>
+    <h3>Mochila 0/1</h3>
+    <p><var>n</var> itens com peso e valor, mochila com capacidade <var>W</var>: qual o maior valor sem passar do peso? Entrada: <code>4 7 / 1 1 / 3 4 / 4 5 / 5 7</code> → <code>9</code>.</p>
+    <div class="compare">
+      <figure>
+        <figcaption><strong>alg</strong><span>9 linhas</span></figcaption>
+<pre><code class="lang-alg">#lang pt
+#decl dp[w + 1];
+
+ler(n, w)
+para i=0 ate n:
+    ler(peso, valor)
+    para c=0 ate em w - peso:
+        cap = w - c
+        dp[cap] = max(dp[cap], dp[cap - peso] + valor)
+escrever(dp[w])</code></pre>
+      </figure>
+      <figure class="cpp">
+        <figcaption><strong>C++</strong><span>16 linhas</span></figcaption>
+<pre><code class="lang-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n, w;
+    cin &gt;&gt; n &gt;&gt; w;
+    vector&lt;long long&gt; dp(w + 1, 0);
+    for (int i = 0; i &lt; n; i++) {
+        int peso; long long valor;
+        cin &gt;&gt; peso &gt;&gt; valor;
+        for (int cap = w; cap &gt;= peso; cap--)
+            dp[cap] = max(dp[cap], dp[cap - peso] + valor);
+    }
+    cout &lt;&lt; dp[w] &lt;&lt; '\n';
+}</code></pre>
+      </figure>
+    </div>
+    <ul class="notes">
+      <li>O <code>para</code> ainda não conta de trás para frente; por enquanto, use <code>cap = w - c</code> como no exemplo.</li>
+      <li>Com <code>-O</code>, este laço roda em 0,56× o tempo do C++ no benchmark do projeto (o compilador gera C que o gcc vetoriza).</li>
+    </ul>
+  </section>
+
+  <section class="problem" id="atividades">
+    <div class="eyebrow">guloso + ordenação · O(n log n)</div>
+    <h3>Máximo de atividades sem sobreposição</h3>
+    <p>Cada atividade tem início e fim. Quantas dá para fazer sem que duas se sobreponham? Ordene pelo fim e pegue a próxima que começa depois da última escolhida. Entrada: <code>4 / 1 3 / 2 5 / 3 9 / 6 8</code> → <code>2</code>.</p>
+    <div class="compare">
+      <figure>
+        <figcaption><strong>alg</strong><span>14 linhas</span></figcaption>
+<pre><code class="lang-alg">#lang pt
+ler(n)
+tarefas = {}
+para i=0 ate n:
+    ler(inicio, fim)
+    tarefas.adicionar((fim, inicio))
+ordenar(tarefas)
+total = 0
+livre = 0
+para (fim, inicio) em tarefas:
+    se inicio &gt;= livre:
+        inc total
+        livre = fim
+escrever(total)</code></pre>
+      </figure>
+      <figure class="cpp">
+        <figcaption><strong>C++</strong><span>20 linhas</span></figcaption>
+<pre><code class="lang-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n;
+    cin &gt;&gt; n;
+    vector&lt;pair&lt;long long, long long&gt;&gt; tarefas(n);
+    for (auto &amp;[fim, inicio] : tarefas)
+        cin &gt;&gt; inicio &gt;&gt; fim;
+    sort(tarefas.begin(), tarefas.end());
+    int total = 0;
+    long long livre = 0;
+    for (auto [fim, inicio] : tarefas)
+        if (inicio &gt;= livre) {
+            total++;
+            livre = fim;
+        }
+    cout &lt;&lt; total &lt;&lt; '\n';
+}</code></pre>
+      </figure>
+    </div>
+    <ul class="notes">
+      <li>Tuplas comparam campo a campo, como <code>pair</code>: <code>(fim, inicio)</code> ordena pelo fim e desempata pelo início.</li>
+      <li><code>ordenar</code> usa radix sort para inteiros e introsort para tuplas e reais; nos testes ficou 0,46× o tempo do <code>std::sort</code>.</li>
+    </ul>
+  </section>
+
+  <section class="problem" id="busca">
+    <div class="eyebrow">busca binária na resposta · O(n log S)</div>
+    <h3>Menor capacidade de caminhão</h3>
+    <p>Pacotes em ordem precisam ir em no máximo <var>k</var> viagens. Qual a menor capacidade de caminhão que dá conta? Teste capacidades com busca binária. Entrada: <code>5 3 / 4 2 7 3 5</code> → <code>8</code>.</p>
+    <div class="compare">
+      <figure>
+        <figcaption><strong>alg</strong><span>22 linhas</span></figcaption>
+<pre><code class="lang-alg">#lang pt
+fn cabe(pesos, cap, k):
+    viagens = 1
+    carga = 0
+    para p em pesos:
+        se p &gt; cap:
+            ret 0
+        se carga + p &gt; cap:
+            inc viagens
+            carga = 0
+        carga += p
+    ret viagens &lt;= k
+
+ler(n, k, pesos[0..n])
+lo = 1
+hi = soma(pesos)
+enquanto lo &lt; hi:
+    meio = (lo + hi) / 2
+    se cabe(pesos, meio, k):
+        hi = meio
+    senao:
+        lo = meio + 1
+escrever(lo)</code></pre>
+      </figure>
+      <figure class="cpp">
+        <figcaption><strong>C++</strong><span>30 linhas</span></figcaption>
+<pre><code class="lang-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+bool cabe(const vector&lt;long long&gt; &amp;pesos, long long cap, int k) {
+    int viagens = 1;
+    long long carga = 0;
+    for (long long p : pesos) {
+        if (p &gt; cap) return false;
+        if (carga + p &gt; cap) {
+            viagens++;
+            carga = 0;
+        }
+        carga += p;
+    }
+    return viagens &lt;= k;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n, k;
+    cin &gt;&gt; n &gt;&gt; k;
+    vector&lt;long long&gt; pesos(n);
+    for (auto &amp;p : pesos) cin &gt;&gt; p;
+    long long lo = 1, hi = accumulate(pesos.begin(), pesos.end(), 0LL);
+    while (lo &lt; hi) {
+        long long meio = lo + (hi - lo) / 2;
+        if (cabe(pesos, meio, k)) hi = meio;
+        else lo = meio + 1;
+    }
+    cout &lt;&lt; lo &lt;&lt; '\n';
+}</code></pre>
+      </figure>
+    </div>
+    <ul class="notes">
+      <li>A função não declara o tipo dos parâmetros: o compilador descobre pelas chamadas e gera uma versão em C para cada combinação de tipos.</li>
+      <li>Vetores passam por referência, sem cópia; o <code>const vector&lt;long long&gt; &amp;</code> do C++ vira só <code>pesos</code>.</li>
+    </ul>
+  </section>
+
+  <section class="problem" id="frequencia">
+    <div class="eyebrow">hash · O(n) + ordenação das chaves</div>
+    <h3>Frequência de cada valor</h3>
+    <p>Leia <var>n</var> números e mostre cada valor distinto com quantas vezes aparece, em ordem crescente. Entrada: <code>6 / 5 1 5 3 1 5</code> → <code>1 2 / 3 1 / 5 3</code>.</p>
+    <div class="compare">
+      <figure>
+        <figcaption><strong>alg</strong><span>8 linhas</span></figcaption>
+<pre><code class="lang-alg">#lang pt
+ler(n)
+cont = mapa {}
+para i=0 ate n:
+    ler(x)
+    cont[x] += 1
+para (valor, vezes) em cont:
+    escrever(valor, vezes)</code></pre>
+      </figure>
+      <figure class="cpp">
+        <figcaption><strong>C++</strong><span>16 linhas</span></figcaption>
+<pre><code class="lang-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n;
+    cin &gt;&gt; n;
+    map&lt;long long, int&gt; cont;
+    for (int i = 0; i &lt; n; i++) {
+        long long x;
+        cin &gt;&gt; x;
+        cont[x]++;
+    }
+    for (auto [valor, vezes] : cont)
+        cout &lt;&lt; valor &lt;&lt; ' ' &lt;&lt; vezes &lt;&lt; '\n';
+}</code></pre>
+      </figure>
+    </div>
+    <ul class="notes">
+      <li>O mapa é um hash (rápido como <code>unordered_map</code>) e percorre as chaves em ordem, como <code>map</code>. Você não precisa escolher entre os dois.</li>
+      <li>A semente do hash muda a cada execução: entradas feitas para derrubar <code>unordered_map</code> não funcionam aqui.</li>
+    </ul>
+  </section>
+
+  <section class="problem" id="bfs">
+    <div class="eyebrow">grafo · BFS · O(n + m)</div>
+    <h3>Menor número de estradas</h3>
+    <p>Cidades 1..<var>n</var> e <var>m</var> estradas de mão dupla. Quantas estradas no mínimo da cidade 1 até a <var>n</var>? Entrada: <code>5 5 / 1 2 / 2 3 / 1 4 / 4 5 / 3 5</code> → <code>2</code>.</p>
+    <div class="compare">
+      <figure>
+        <figcaption><strong>alg</strong><span>19 linhas</span></figcaption>
+<pre><code class="lang-alg">#lang pt
+#decl dist[n];
+
+ler(n, m)
+g = grafo(n)
+para i=0 ate m:
+    ler(u, v)
+    g.aresta(u - 1, v - 1)
+para i=0 ate n:
+    dist[i] = -1
+dist[0] = 0
+proximos = fila()
+proximos.enfileirar(0)
+enquanto tam(proximos) &gt; 0:
+    u = proximos.desenfileirar()
+    para v em g.vizinhos(u):
+        se dist[v] == -1:
+            dist[v] = dist[u] + 1
+            proximos.enfileirar(v)
+escrever(dist[n - 1])</code></pre>
+      </figure>
+      <figure class="cpp">
+        <figcaption><strong>C++</strong><span>29 linhas</span></figcaption>
+<pre><code class="lang-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n, m;
+    cin &gt;&gt; n &gt;&gt; m;
+    vector&lt;vector&lt;int&gt;&gt; g(n);
+    for (int i = 0; i &lt; m; i++) {
+        int u, v;
+        cin &gt;&gt; u &gt;&gt; v;
+        g[u - 1].push_back(v - 1);
+        g[v - 1].push_back(u - 1);
+    }
+    vector&lt;int&gt; dist(n, -1);
+    dist[0] = 0;
+    queue&lt;int&gt; proximos;
+    proximos.push(0);
+    while (!proximos.empty()) {
+        int u = proximos.front();
+        proximos.pop();
+        for (int v : g[u])
+            if (dist[v] == -1) {
+                dist[v] = dist[u] + 1;
+                proximos.push(v);
+            }
+    }
+    cout &lt;&lt; dist[n - 1] &lt;&lt; '\n';
+}</code></pre>
+      </figure>
+    </div>
+    <ul class="notes">
+      <li><code>grafo(n)</code> é não dirigido: <code>aresta(u, v)</code> já liga os dois lados. Esquecer a volta é um bug clássico que aqui não existe.</li>
+      <li>O grafo vira uma lista de adjacência compacta na primeira consulta; nos testes, BFS ficou 0,45× o tempo da versão com <code>vector&lt;vector&gt;</code>.</li>
+    </ul>
+  </section>
+
+  <section class="problem" id="dijkstra">
+    <div class="eyebrow">menor caminho com pesos · O((n + m) log m)</div>
+    <h3>Dijkstra</h3>
+    <p>Grafo dirigido com pesos positivos: menor distância da cidade 1 até cada cidade. Entrada: <code>3 4 / 1 2 6 / 1 3 2 / 3 2 3 / 2 3 4</code> → <code>0 5 2</code>.</p>
+    <div class="compare">
+      <figure>
+        <figcaption><strong>alg</strong><span>21 linhas</span></figcaption>
+<pre><code class="lang-alg">#lang pt
+#decl dist[n];
+
+ler(n, m)
+g = grafo(n, dirigido)
+para i=0 ate m:
+    ler(u, v, w)
+    g.aresta(u - 1, v - 1, w)
+para i=0 ate n:
+    dist[i] = INF
+dist[0] = 0
+h = heap()
+h.inserir((0, 0))
+enquanto tam(h) &gt; 0:
+    (d, u) = h.remover()
+    se d &gt; dist[u]:
+        continue
+    para (v, w) em g.vizinhos(u):
+        se d + w &lt; dist[v]:
+            dist[v] = d + w
+            h.inserir((dist[v], v))
+escrever(dist)</code></pre>
+      </figure>
+      <figure class="cpp">
+        <figcaption><strong>C++</strong><span>33 linhas</span></figcaption>
+<pre><code class="lang-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n, m;
+    cin &gt;&gt; n &gt;&gt; m;
+    vector&lt;vector&lt;pair&lt;int, long long&gt;&gt;&gt; g(n);
+    for (int i = 0; i &lt; m; i++) {
+        int u, v;
+        long long w;
+        cin &gt;&gt; u &gt;&gt; v &gt;&gt; w;
+        g[u - 1].push_back({v - 1, w});
+    }
+    const long long INF = 1e18;
+    vector&lt;long long&gt; dist(n, INF);
+    dist[0] = 0;
+    priority_queue&lt;pair&lt;long long, int&gt;,
+                   vector&lt;pair&lt;long long, int&gt;&gt;, greater&lt;&gt;&gt; h;
+    h.push({0, 0});
+    while (!h.empty()) {
+        auto [d, u] = h.top();
+        h.pop();
+        if (d &gt; dist[u]) continue;
+        for (auto [v, w] : g[u])
+            if (d + w &lt; dist[v]) {
+                dist[v] = d + w;
+                h.push({dist[v], v});
+            }
+    }
+    for (int i = 0; i &lt; n; i++)
+        cout &lt;&lt; dist[i] &lt;&lt; " \n"[i == n - 1];
+}</code></pre>
+      </figure>
+    </div>
+    <ul class="notes">
+      <li><code>heap()</code> já tira o menor primeiro: nada de <code>greater&lt;&gt;</code> nem de inverter sinal. Para o maior primeiro, <code>heap(maior)</code>.</li>
+      <li><code>INF</code> vale 10<sup>18</sup>, com folga para <code>INF + w</code> não estourar. Num vetor <code>: int32</code>, o compilador guarda INF de um jeito especial e ele continua valendo INF quando lido.</li>
+      <li><code>escrever(dist)</code> escreve o vetor inteiro separado por espaço.</li>
+    </ul>
+  </section>
+
+  <section id="traducao">
+    <div class="eyebrow">referência rápida</div>
+    <h2>Tradução C++ → alg</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>C++</th><th>alg</th><th>Observação</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>cin &gt;&gt; n;</code> + <code>vector&lt;ll&gt; a(n)</code> + laço</td><td><code>ler(n, a[0..n])</code></td><td>lê e cria o vetor</td></tr>
+          <tr><td><code>cout &lt;&lt; a &lt;&lt; ' ' &lt;&lt; b &lt;&lt; '\n';</code></td><td><code>escrever(a, b)</code></td><td>saída bufferizada</td></tr>
+          <tr><td><code>for (int i = 0; i &lt; n; i++)</code></td><td><code>para i=0 ate n:</code></td><td><code>ate</code> não inclui o fim</td></tr>
+          <tr><td><code>for (int i = 1; i &lt;= n; i++)</code></td><td><code>para i=1 ate em n:</code></td><td><code>ate em</code> inclui</td></tr>
+          <tr><td><code>for (auto x : v)</code></td><td><code>para x em v:</code></td><td></td></tr>
+          <tr><td><code>long long</code></td><td>(nada)</td><td>todo inteiro é de 64 bits</td></tr>
+          <tr><td><code>int dp[N][M]</code> global</td><td><code>#decl dp[n][m]: int32;</code></td><td>tamanho real, não o máximo</td></tr>
+          <tr><td><code>i++</code>, <code>i--</code></td><td><code>inc i</code>, <code>dec i</code></td><td>só como comando</td></tr>
+          <tr><td><code>pair&lt;ll, int&gt;</code>, <code>make_pair</code></td><td><code>(d, u)</code></td><td>tupla de qualquer tamanho</td></tr>
+          <tr><td><code>auto [d, u] = p;</code></td><td><code>(d, u) = p</code></td><td></td></tr>
+          <tr><td><code>sort(v.begin(), v.end())</code></td><td><code>ordenar(v)</code></td><td><code>ordenar(v, maior)</code> decrescente</td></tr>
+          <tr><td><code>priority_queue&lt;T, vector&lt;T&gt;, greater&lt;&gt;&gt;</code></td><td><code>heap()</code></td><td>menor primeiro</td></tr>
+          <tr><td><code>queue&lt;int&gt;</code></td><td><code>fila()</code></td><td><code>enfileirar</code> / <code>desenfileirar</code></td></tr>
+          <tr><td><code>map</code> / <code>unordered_map</code></td><td><code>mapa {}</code></td><td>chave ausente vale 0</td></tr>
+          <tr><td><code>m.count(k)</code></td><td><code>k em m</code></td><td></td></tr>
+          <tr><td><code>vector&lt;vector&lt;int&gt;&gt; g(n)</code> + <code>push_back</code> dos dois lados</td><td><code>g = grafo(n)</code> + <code>g.aresta(u, v)</code></td><td><code>grafo(n, dirigido)</code> para mão única</td></tr>
+          <tr><td><code>accumulate</code>, <code>*max_element</code></td><td><code>soma(v)</code>, <code>max(v)</code></td><td>também <code>soma(i*i para i=0 ate n)</code></td></tr>
+          <tr><td><code>&amp;&amp;</code>, <code>||</code>, <code>!</code></td><td><code>e</code>, <code>ou</code>, <code>nao</code></td><td><code>&amp; | ^ ~ &lt;&lt; &gt;&gt;</code> continuam bit a bit</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="armadilhas">
+    <div class="eyebrow">bugs que não acontecem</div>
+    <h2>Armadilhas do C++ que o alg evita</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Em C++</th><th>No alg</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>int</code> estoura em somas de 10<sup>5</sup> · 10<sup>5</sup></td><td>inteiros são de 64 bits; vetores usam menos bytes só quando o compilador prova que os valores cabem</td></tr>
+          <tr><td><code>-7 % 2 == -1</code> quebra aritmética modular</td><td><code>-7 % 2 == 1</code> e <code>-7 / 2 == -4</code>: o resto nunca é negativo</td></tr>
+          <tr><td><code>INF + w</code> estoura quando <code>INF = LLONG_MAX</code></td><td><code>INF</code> já vale 10<sup>18</sup></td></tr>
+          <tr><td><code>x &amp; 1 == 0</code> é lido como <code>x &amp; (1 == 0)</code></td><td>bit a bit liga mais forte que comparação: funciona como se lê</td></tr>
+          <tr><td>DFS recursiva com 10<sup>5</sup> nós estoura a pilha de 8 MB</td><td>o programa roda com 256 MB de pilha</td></tr>
+          <tr><td><code>cin</code> sem <code>sync_with_stdio(false)</code> leva TLE</td><td>a leitura já é rápida (2× mais que <code>cin</code> otimizado)</td></tr>
+          <tr><td><code>a[i++] = i</code>: ordem de avaliação indefinida</td><td><code>inc</code> e <code>+=</code> são comandos, nunca parte de expressão</td></tr>
+          <tr><td>esquecer a aresta de volta no grafo não dirigido</td><td><code>grafo(n)</code> já é não dirigido</td></tr>
+          <tr><td><code>unordered_map</code> derrubado por entrada adversária</td><td>semente aleatória no hash a cada execução</td></tr>
+          <tr><td>índice fora do vetor vira lixo ou segfault</td><td>sem <code>-O</code>, erro com a linha</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="desempenho">
+    <div class="eyebrow">medido</div>
+    <h2>Desempenho</h2>
+    <p class="prose">Tempo do alg com <code>-O</code> dividido pelo tempo do C++ <code>-O2</code> com <code>cin</code> otimizado, mesma entrada, melhor de 5 execuções. Menor que 1 significa que o alg foi mais rápido.</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Problema</th><th>alg -O</th><th>C++ -O2</th><th>Razão</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Dijkstra, 10<sup>5</sup> vértices, 10<sup>6</sup> arestas</td><td class="num">0,170 s</td><td class="num">0,468 s</td><td class="num">0,36×</td></tr>
+          <tr><td>BFS, 10<sup>6</sup> vértices, 2·10<sup>6</sup> arestas</td><td class="num">0,675 s</td><td class="num">1,402 s</td><td class="num">0,45×</td></tr>
+          <tr><td>ordenar 10<sup>6</sup> inteiros</td><td class="num">0,085 s</td><td class="num">0,187 s</td><td class="num">0,46×</td></tr>
+          <tr><td>soma de prefixos, 10<sup>6</sup> consultas</td><td class="num">0,230 s</td><td class="num">0,450 s</td><td class="num">0,50×</td></tr>
+          <tr><td>mochila, 10<sup>8</sup> operações</td><td class="num">0,045 s</td><td class="num">0,077 s</td><td class="num">0,57×</td></tr>
+          <tr><td>contar 10<sup>6</sup> valores (mapa)</td><td class="num">0,186 s</td><td class="num">0,297 s</td><td class="num">0,62×</td></tr>
+          <tr><td>LCS 4000 × 4000</td><td class="num">0,072 s</td><td class="num">0,074 s</td><td class="num">0,96×</td></tr>
+          <tr><td>crivo até 2·10<sup>7</sup></td><td class="num">0,181 s</td><td class="num">0,186 s</td><td class="num">0,99×</td></tr>
+          <tr><td>fib(38) recursivo</td><td class="num">0,095 s</td><td class="num">0,093 s</td><td class="num">1,01×</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout">
+      <p>Nos problemas de estrutura, parte da vantagem vem da leitura de entrada. Contra C++ com um leitor rápido feito à mão, o alg continua na frente: ordenar 0,74×, Dijkstra 0,62×, BFS 0,52×, mapa 0,86×.</p>
+    </div>
+  </section>
+
+  <footer class="prose">
+    <p>Especificação completa e status de cada recurso em <code>docs/linguagem.md</code>. Para medir no seu computador: <code>python3 bench/run.py</code>.</p>
+  </footer>
+</main>
+
+<script>
+  (function () {
+    const ALG = {
+      flow: ["se", "senao", "enquanto", "para", "ate", "em", "ret", "pare", "continue", "inc", "dec", "if", "else", "while", "for", "to", "in", "thr", "break"],
+      kw: ["fn", "e", "ou", "nao", "and", "or", "not", "verdadeiro", "falso", "true", "false", "INF", "maior", "dirigido"],
+      bi: ["ler", "escrever", "tamanho", "copia", "soma", "min", "max", "ordenar", "heap", "fila", "grafo", "mapa", "read", "write", "len", "sum", "sort", "queue", "graph", "map"],
+      ty: ["int", "int32", "real"],
+    };
+    const CPP = {
+      flow: ["if", "else", "while", "for", "return", "continue", "break"],
+      kw: ["using", "namespace", "const", "auto", "true", "false", "struct"],
+      bi: ["cin", "cout", "sort", "max", "min", "accumulate", "ios", "sync_with_stdio", "tie"],
+      ty: ["int", "long", "bool", "void", "vector", "pair", "queue", "priority_queue", "map", "greater", "std"],
+    };
+
+    function escapeHtml(text) {
+      return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    function highlight(source, lang) {
+      const words = lang === "cpp" ? CPP : ALG;
+      const pattern = /(\/\/[^\n]*|#[^\n]*?(?=\n|$)|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\b\d+(?:\.\d+)?\b|\.[A-Za-z_]\w*|[A-Za-z_]\w*)/g;
+      let out = "";
+      let last = 0;
+      let match;
+
+      while ((match = pattern.exec(source))) {
+        const token = match[0];
+        out += escapeHtml(source.slice(last, match.index));
+        last = match.index + token.length;
+        let cls = "";
+
+        if (token.startsWith("//")) cls = "co";
+        else if (token.startsWith("#")) cls = lang === "cpp" ? "di" : "di";
+        else if (token[0] === '"' || token[0] === "'") cls = "st";
+        else if (/^\d/.test(token)) cls = "nu";
+        else if (token[0] === ".") {
+          out += "." + '<span class="me">' + escapeHtml(token.slice(1)) + "</span>";
+          continue;
+        }
+        else if (words.flow.includes(token)) cls = "flow";
+        else if (words.kw.includes(token)) cls = "kw";
+        else if (words.bi.includes(token)) cls = "bi";
+        else if (words.ty.includes(token)) cls = "ty";
+
+        out += cls ? '<span class="' + cls + '">' + escapeHtml(token) + "</span>" : escapeHtml(token);
+      }
+
+      return out + escapeHtml(source.slice(last));
+    }
+
+    document.querySelectorAll("pre code.lang-alg, pre code.lang-cpp").forEach(function (block) {
+      const lang = block.classList.contains("lang-cpp") ? "cpp" : "alg";
+      block.innerHTML = highlight(block.textContent, lang);
+    });
+  })();
+</script>

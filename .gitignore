@@ -1,0 +1,11 @@
+# gerados pelo make
+/alg
+/build/
+
+# saídas de teste e do benchmark
+tests/cases/*.got
+bench/out/
+bench/*.in
+
+# executáveis de exemplo
+example/sol
