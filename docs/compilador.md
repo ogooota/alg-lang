@@ -86,3 +86,15 @@ Cada arquivo é um template: o gerador define macros e inclui o texto uma vez po
   Medido: 0,81× o tempo do `std::sort` de `vector<string>`, com 10⁶ palavras.
 - `read_line` logo depois de um número pula o resto vazio da linha (`input_after_token`), como o `getline` depois de `cin >> ws` faria.
 
+
+## Alinhamento, peeling e unroll (medido num i5-7200U, AVX2)
+
+- **Alinhamento:** `arena_allocate` começa todo bloco de 1 KB ou mais numa linha de cache (64 bytes).
+  - Com base de 16 bytes, metade dos loads e stores AVX de 32 bytes atravessa duas linhas.
+  - Laço vetorizado que lê e grava, com dados no L1/L2: **0,78×** do tempo.
+  - Laço que só lê (redução): sem diferença.
+  - Custo: até 63 bytes por bloco grande. Blocos pequenos (strings curtas, nós) não mudam.
+- **Peeling:** o gcc 13 com `-mtune=generic` não faz peeling de alinhamento em nenhum laço dos benchmarks. Ele usa loads desalinhados (`vmovdqu`), que custam o mesmo que os alinhados quando o endereço está alinhado. Peeling só alinharia *um* dos vetores do laço; alinhar na alocação acerta todos de uma vez, sem custo em tempo de execução. Por isso não geramos peeling nem `__builtin_assume_aligned`: o segundo seria falso em views (`a[i..j]`, linhas de matriz), que começam em qualquer endereço.
+- **Unroll:** o `unroll-loops` do `-O` fica.
+  - Ganho de 10% nos laços vetorizados (redução, mochila).
+  - Nos outros benchmarks, a diferença ficou dentro de ±3%, que é ruído.

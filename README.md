@@ -76,6 +76,14 @@ alg with `-O` against C++ `-O2` (with `sync_with_stdio(false)`), same input, bes
 Part of the gap is input speed. Against C++ with a hand-written fast reader, alg still comes out ahead on sorting (0.74×),
 Dijkstra (0.62×), BFS (0.52×) and maps (0.86×). Reproduce with `python3 bench/gen_inputs.py && python3 bench/run.py`.
 
+The same nine problems in C, Rust, JavaScript and Python (`python3 bench/langs/run.py`), geometric mean of time vs C++ (lower is better):
+
+| alg -O | C -O2 | Rust -O | C++ -O2 | JS (Node) | Python |
+|---|---|---|---|---|---|
+| 0.54× | 0.66× | 0.69× | 1.00× | 1.67× | 10.6× |
+
+C and Rust use a fast reader; the C++ versions use plain `cin` with `sync_with_stdio(false)`.
+
 ## Getting started
 
 Requirements: a C compiler (`cc`/gcc), `make` and `xxd`.
