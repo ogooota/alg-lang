@@ -22,11 +22,13 @@ escrever(r)
 
 // heap
 h = heap()
-para x em {5, 1, 4, 2}:
+para x em {5, 1, 4, 2} {
     h.inserir(x)
+}
 escrever(h.topo(), tam(h))
-enquanto tam(h) > 0:
+enquanto tam(h) > 0 {
     escrever(h.remover())
+}
 hm = heap(maior)
 hm.inserir((1, 10))
 hm.inserir((3, 30))
@@ -36,18 +38,21 @@ escrever(d, u)
 
 // fila
 f = fila()
-para i=0 ate 5:
+para i=0 ate 5 {
     f.enfileirar(i * i)
+}
 escrever(f.desenfileirar(), f.frente(), tam(f))
 
 // mapa: contagem, em, remover, percorrer em ordem
 cont = mapa {}
-para x em {3, 1, 3, 2, 3, 1}:
+para x em {3, 1, 3, 2, 3, 1} {
     cont[x] = cont[x] + 1
+}
 escrever(cont[3], cont[7], 2 em cont, 7 em cont, tam(cont))
 cont.remover(2)
-para (k, c) em cont:
+para (k, c) em cont {
     escrever(k, c)
+}
 pos = mapa {}
 pos[(1, 2)] = 5
 escrever(pos[(1, 2)], (2, 1) em pos)
@@ -62,12 +67,15 @@ dist = {-1, -1, -1, -1, -1, -1}
 dist[0] = 0
 q = fila()
 q.enfileirar(0)
-enquanto tam(q) > 0:
+enquanto tam(q) > 0 {
     x = q.desenfileirar()
-    para y em g.vizinhos(x):
-        se dist[y] == -1:
+    para y em g.vizinhos(x) {
+        se dist[y] == -1 {
             dist[y] = dist[x] + 1
             q.enfileirar(y)
+        }
+    }
+}
 escrever(dist)
 
 // Dijkstra com INF e int32
@@ -76,19 +84,24 @@ gd.aresta(0, 1, 5)
 gd.aresta(0, 2, 1)
 gd.aresta(2, 1, 2)
 gd.aresta(1, 3, 1)
-fn dijkstra(gr, origem, n):
+fn dijkstra(gr, origem, n) {
     dd = {INF, INF, INF, INF}
     dd[origem] = 0
     hp = heap()
     hp.inserir((0, origem))
-    enquanto tam(hp) > 0:
+    enquanto tam(hp) > 0 {
         (du, uu) = hp.remover()
-        se du > dd[uu]:
+        se du > dd[uu] {
             continue
-        para (vv, ww) em gr.vizinhos(uu):
-            se du + ww < dd[vv]:
+        }
+        para (vv, ww) em gr.vizinhos(uu) {
+            se du + ww < dd[vv] {
                 dd[vv] = du + ww
                 hp.inserir((dd[vv], vv))
+            }
+        }
+    }
     ret dd
+}
 escrever(dijkstra(gd, 0, 4))
 escrever(dijkstra(gd, 3, 4))

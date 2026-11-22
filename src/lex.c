@@ -353,32 +353,6 @@ static int lex_indentation(Lexer *lexer, int has_lang)
         return 1;
     }
 
-    int top = lexer->indent_stack[lexer->indent_depth - 1];
-
-    if (width > top)
-    {
-        if (lexer->indent_depth == 256)
-        {
-            fail_at(lexer->line, 1, "indentação funda demais");
-        }
-
-        lexer->indent_stack[lexer->indent_depth] = width;
-        lexer->indent_depth++;
-        emit_token(lexer, TOKEN_INDENT, lexer->line, width + 1);
-        return 1;
-    }
-
-    while (width < lexer->indent_stack[lexer->indent_depth - 1])
-    {
-        lexer->indent_depth--;
-        emit_token(lexer, TOKEN_DEDENT, lexer->line, width + 1);
-    }
-
-    if (width != lexer->indent_stack[lexer->indent_depth - 1])
-    {
-        fail_at(lexer->line, width + 1, "indentação não bate com nenhum bloco aberto");
-    }
-
     return 1;
 }
 
@@ -565,14 +539,12 @@ static int lex_symbol(Lexer *lexer, const Spelling *table, size_t size)
 
         TokenKind kind = table[i].kind;
 
-        if (kind == PUNCT_LEFT_PAREN || kind == PUNCT_LEFT_BRACKET || kind == PUNCT_LEFT_BRACE)
+        if (kind == PUNCT_LEFT_PAREN || kind == PUNCT_LEFT_BRACKET)
         {
             lexer->paren_depth++;
         }
 
-        if ((kind == PUNCT_RIGHT_PAREN || kind == PUNCT_RIGHT_BRACKET ||
-             kind == PUNCT_RIGHT_BRACE) &&
-            lexer->paren_depth > 0)
+        if ((kind == PUNCT_RIGHT_PAREN || kind == PUNCT_RIGHT_BRACKET) && lexer->paren_depth > 0)
         {
             lexer->paren_depth--;
         }

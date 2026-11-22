@@ -23,10 +23,12 @@ v[1] += 10
 inc v[2]
 escrever(v)
 m = mapa {}
-para k em {3, 1, 3}:
+para k em {3, 1, 3} {
     m[k] += 1
-para (k, c) em m:
+}
+para (k, c) em m {
     escrever(k, c)
+}
 r = 1.5
 r *= 2
 escrever(r)

@@ -1,20 +1,14 @@
-#lang pt
-#decl 
-    ev[n];
+#lang en
+#decl {
+    w[n];
+    v[n];
+}
 
-ler(n)
-pols = 0 
-unt = 0
-para i = 0 ate n:
-    ler(ev[i])
-    se ev[i] == -1:
-        se pols > 0:
-            dec pols 
-            continue
-        inc unt
-        continue
-    pols += ev[i]
+// o problema da mochila 
+read(n, cap)
 
-escrever(unt)
+for i=0 to n:
+
+
 
 

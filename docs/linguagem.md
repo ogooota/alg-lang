@@ -21,7 +21,7 @@ make test                     # roda tests/cases/*.alg
 | Tema | Decisão | Status |
 |---|---|---|
 | Idioma | `#lang pt` ou `#lang en` obrigatório na 1ª linha; um idioma por arquivo | ✅ |
-| Blocos | indentação (tab = 4 espaços); `se x: y = 1` em uma linha também vale | ✅ |
+| Blocos | chaves `{ }`, com a chave aberta na mesma linha (`se x {`) ou na seguinte; indentação livre; `se x { y = 1 }` em uma linha também vale | ✅ |
 | Comentário | `//` | ✅ |
 | `;` | opcional no fim de qualquer comando (`x = 3;`), para quem está acostumado com C | ✅ |
 | Função | `fn nome(a, b):` com bloco, ou `f(x) = expr` em uma linha; `ret` devolve (iguais em pt e en) | ✅ |
@@ -68,9 +68,10 @@ make test                     # roda tests/cases/*.alg
 
 ```
 #lang pt
-#decl
+#decl {
     dist[n];            // criado no 1º uso, quando n já foi lido
     total; media: real; // zerados
+}
 
 ler(n, m)               // vários de uma vez
 ler(grid[0..n][0..m])   // cria a matriz n×m e lê
@@ -85,22 +86,23 @@ u = v.remover_ultimo()
 tam(v)
 copia(v[1..3])
 
-se x > 0 e nao (x == 3):
+se x > 0 e nao (x == 3) {
     escrever("ok")
-senao se x < -10:
+} senao se x < -10 {
     escrever("muito negativo")
-senao:
+} senao {
     escrever("outro")
+}
 
-enquanto lo < hi:
+enquanto lo < hi {
     m = (lo + hi) / 2
-    ...
-    pare / continue
+    // pare / continue
+}
 
-para i=0 ate n:         // 0..n-1
-para i=1 ate em n:      // 1..n
-para x em v:            // elementos
-para linha em grid:     // linhas (vetor 1D)
+para i=0 ate n { }      // 0..n-1
+para i=1 ate em n { }   // 1..n
+para x em v { }         // elementos
+para linha em grid { }  // linhas (vetor 1D)
 
 soma(v)  max(v)  min(v)  min(a, b, c)
 soma(i * i para i=0 ate n)
@@ -108,10 +110,12 @@ max(x para x em v)
 int(2.7)  real(3)
 
 quadrado(x) = x * x     // função de uma linha
-fn fib(k):
-    se k < 2:
+fn fib(k) {
+    se k < 2 {
         ret k
+    }
     ret fib(k - 1) + fib(k - 2)
+}
 
 escrever(a, "texto", v, grid)
 ```

@@ -45,6 +45,27 @@ static Token *expect_token(TokenKind kind)
 }
 
 /** Erro para palavras reservadas que ainda não foram implementadas. */
+/** Pula fins de linha (linhas vazias entre comandos e antes de '{' ou 'senao'). */
+static void skip_newlines(void)
+{
+    while (accept_token(TOKEN_NEWLINE))
+    {
+    }
+}
+
+/** Tipo do próximo token que não é fim de linha (sem consumir nada). */
+static TokenKind next_after_newlines(void)
+{
+    int index = position;
+
+    while (tokens->items[index].kind == TOKEN_NEWLINE)
+    {
+        index++;
+    }
+
+    return tokens->items[index].kind;
+}
+
 static _Noreturn void fail_unimplemented(Token *token)
 {
     fail_at(token->line, token->column, "'%s' ainda não foi implementado nesta versão",
@@ -217,7 +238,21 @@ static Expression *parse_primary(void)
     case PUNCT_LEFT_BRACE:
         position++;
         expr = new_expression(EXPR_VECTOR, token);
-        parse_expression_list(&expr->arguments, PUNCT_RIGHT_BRACE);
+        skip_newlines();
+
+        while (!at_token(PUNCT_RIGHT_BRACE))
+        {
+            PUSH(expr->arguments, parse_expression());
+            skip_newlines();
+
+            if (!accept_token(PUNCT_COMMA))
+            {
+                break;
+            }
+
+            skip_newlines();
+        }
+
         expect_token(PUNCT_RIGHT_BRACE);
         return expr;
 
@@ -423,22 +458,29 @@ static Expression *parse_expression(void)
 
 static void parse_statement(StatementList *out);
 
-/* ":" seguido de bloco indentado, ou de um comando na mesma linha (se x: y = 1) */
+/* { comandos }: a chave pode vir na mesma linha (if x {) ou na seguinte */
 static void parse_block(StatementList *out)
 {
-    expect_token(PUNCT_COLON);
+    skip_newlines();
 
-    if (!accept_token(TOKEN_NEWLINE))
+    if (at_token(PUNCT_COLON))
     {
-        parse_statement(out);
-        return;
+        fail_at(current_token()->line, current_token()->column,
+                "blocos usam chaves: if x { ... } (o ':' era a sintaxe antiga)");
     }
 
-    expect_token(TOKEN_INDENT);
+    expect_token(PUNCT_LEFT_BRACE);
+    skip_newlines();
 
-    while (!accept_token(TOKEN_DEDENT))
+    while (!accept_token(PUNCT_RIGHT_BRACE))
     {
+        if (at_token(TOKEN_EOF))
+        {
+            fail_at(current_token()->line, current_token()->column, "falta '}' para fechar o bloco");
+        }
+
         parse_statement(out);
+        skip_newlines();
     }
 }
 
@@ -471,7 +513,7 @@ static void parse_declaration_line(Statement *stmt)
 {
     do
     {
-        if (at_token(TOKEN_NEWLINE))
+        if (at_token(TOKEN_NEWLINE) || at_token(PUNCT_RIGHT_BRACE))
         {
             break;
         }
@@ -479,7 +521,10 @@ static void parse_declaration_line(Statement *stmt)
         parse_declaration_item(stmt);
     } while (accept_token(PUNCT_SEMICOLON));
 
-    expect_token(TOKEN_NEWLINE);
+    if (!at_token(PUNCT_RIGHT_BRACE))
+    {
+        expect_token(TOKEN_NEWLINE);
+    }
 }
 
 /* #decl a; b;   ou   #decl + bloco indentado */
@@ -487,17 +532,20 @@ static Statement *parse_declaration(Token *token)
 {
     Statement *stmt = new_statement(STMT_DECL, token);
 
-    if (!accept_token(TOKEN_NEWLINE))
+    if (next_after_newlines() != PUNCT_LEFT_BRACE)
     {
         parse_declaration_line(stmt);
         return stmt;
     }
 
-    expect_token(TOKEN_INDENT);
+    skip_newlines();
+    expect_token(PUNCT_LEFT_BRACE);
+    skip_newlines();
 
-    while (!accept_token(TOKEN_DEDENT))
+    while (!accept_token(PUNCT_RIGHT_BRACE))
     {
         parse_declaration_line(stmt);
+        skip_newlines();
     }
 
     return stmt;
@@ -540,8 +588,11 @@ static Statement *parse_if(Token *token)
     stmt->first = parse_expression();
     parse_block(&stmt->body);
 
-    while (at_token(KEYWORD_SENAO))
+    /* o senao pode vir depois de '}' na mesma linha ou na linha seguinte */
+    while (next_after_newlines() == KEYWORD_SENAO)
     {
+        skip_newlines();
+
         Token *else_token = current_token();
         position++;
 
@@ -793,7 +844,12 @@ static Statement *parse_simple_statement(Token *token)
 static void end_statement(void)
 {
     accept_token(PUNCT_SEMICOLON);
-    expect_token(TOKEN_NEWLINE);
+
+    /* um comando pode terminar logo antes do '}' (if x { y = 1 }) */
+    if (!at_token(PUNCT_RIGHT_BRACE))
+    {
+        expect_token(TOKEN_NEWLINE);
+    }
 }
 
 static void parse_statement(StatementList *out)
@@ -878,9 +934,12 @@ StatementList parse(TokenList *t, Language language)
     position = 0;
     function_depth = 0;
 
+    skip_newlines();
+
     while (!at_token(TOKEN_EOF))
     {
         parse_statement(&out);
+        skip_newlines();
     }
 
     return out;
