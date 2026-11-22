@@ -5,7 +5,7 @@ Type *check_int(Expression *expr)
 {
     Type *type = resolve_unknown(check_expression(expr));
 
-    if (type->kind != TYPE_INT)
+    if (type->kind != TYPE_INT && type->kind != TYPE_CHAR)
     {
         FAIL_AT_NODE(expr, "esperava inteiro, mas é %s", type_name(type));
     }
@@ -218,6 +218,16 @@ Type *check_binary(Expression *expr)
         Type *left_type = resolve_unknown(check_expression(expr->first));
         Type *right_type = resolve_unknown(check_expression(expr->second));
 
+        if (is_string(left_type) || is_string(right_type))
+        {
+            if (!is_string(left_type) || !is_string(right_type))
+            {
+                FAIL_AT_NODE(expr, "só dá para comparar texto com texto");
+            }
+
+            return &INT_TYPE;
+        }
+
         if (left_type->kind == TYPE_TUPLE || right_type->kind == TYPE_TUPLE)
         {
             if (left_type->kind != TYPE_TUPLE || right_type->kind != TYPE_TUPLE ||
@@ -251,6 +261,26 @@ Type *check_binary(Expression *expr)
         check_int(expr->first);
         check_int(expr->second);
         return &INT_TYPE;
+    }
+
+    /* texto + texto e texto + caractere: uma string nova */
+    if (expr->operation == PUNCT_PLUS)
+    {
+        Type *left_value = resolve_unknown(check_expression(expr->first));
+
+        if (is_string(left_value))
+        {
+            Type *right_value = resolve_unknown(check_expression(expr->second));
+
+            if (!is_string(right_value) && right_value->kind != TYPE_CHAR &&
+                right_value->kind != TYPE_INT)
+            {
+                FAIL_AT_NODE(expr->second, "texto + %s não existe (use str(x) para números)",
+                             type_name(right_value));
+            }
+
+            return new_string_type();
+        }
     }
 
     Type *left_type = check_number(expr->first);
@@ -320,10 +350,19 @@ Type *check_method(Expression *expr)
     case METHOD_ADICIONAR:
     case METHOD_INSERIR:
     case METHOD_ENFILEIRAR:
+    {
         check_argument_count(expr, 1, 1);
-        store_in_cell(type->element, check_expression(expr->arguments.items[0]),
-                      expr->arguments.items[0]);
+        Type *value = resolve_unknown(check_expression(expr->arguments.items[0]));
+
+        /* texto.add(outro texto) acrescenta no fim */
+        if (is_string(type) && is_string(value))
+        {
+            return &VOID_TYPE;
+        }
+
+        store_in_cell(type->element, value, expr->arguments.items[0]);
         return &VOID_TYPE;
+    }
 
     case METHOD_REMOVER:
         if (type->kind == TYPE_MAP)
@@ -410,7 +449,10 @@ Type *check_expression(Expression *expr)
         return expr->type = &REAL_TYPE;
 
     case EXPR_STRING:
-        return expr->type = &STRING_TYPE;
+        return expr->type = new_string_type();
+
+    case EXPR_CHAR:
+        return expr->type = &CHAR_TYPE;
 
     case EXPR_NAME:
     {
@@ -484,7 +526,7 @@ Type *check_expression(Expression *expr)
         if (type->kind == TYPE_MAP)
         {
             store_in_cell(type->element, check_expression(expr->second), expr->second);
-            return expr->type = type->value;
+            return expr->type = value_of_cell(type->value);
         }
 
         if (type->kind != TYPE_ARRAY)
@@ -494,7 +536,7 @@ Type *check_expression(Expression *expr)
 
         check_int(expr->second);
         return expr->type = type->dimension_count == 1
-                                ? type->element
+                                ? value_of_cell(type->element)
                                 : array_type(type->element, type->dimension_count - 1);
     }
 
@@ -650,6 +692,14 @@ Type *check_expression(Expression *expr)
             type->directed = expr->arguments.count == 2;
             return expr->type = type;
         }
+
+        case BUILTIN_TEXTO:
+            check_argument_count(expr, 1, 1);
+            check_number(expr->arguments.items[0]);
+            return expr->type = new_string_type();
+
+        case BUILTIN_LER_LINHA:
+            FAIL_AT_NODE(expr, "%s é um comando, não devolve valor", expr->text);
 
         case BUILTIN_PREFIXO:
         {

@@ -70,6 +70,8 @@ alg with `-O` against C++ `-O2` (with `sync_with_stdio(false)`), same input, bes
 | Fenwick tree, 10⁶ updates and sums | 0.53× |
 | segment tree (min), 10⁶ updates and queries | 0.56× |
 | sparse table, 10⁶ range minimums | 0.57× |
+| sort 10⁶ words | 0.81× |
+| count 10⁶ words with a map | 0.84× |
 
 Part of the gap is input speed. Against C++ with a hand-written fast reader, alg still comes out ahead on sorting (0.74×),
 Dijkstra (0.62×), BFS (0.52×) and maps (0.86×). Reproduce with `python3 bench/gen_inputs.py && python3 bench/run.py`.
@@ -95,5 +97,5 @@ make test                    # run the test suite
 
 ## Status
 
-alg is young. Strings, sets, records and step/descending loops are designed but not implemented yet;
+alg is young. Sets, records and step/descending loops are designed but not implemented yet;
 runtime error messages are in Portuguese for now. Issues and ideas are welcome.

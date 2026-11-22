@@ -72,3 +72,17 @@ Cada arquivo é um template: o gerador define macros e inclui o texto uma vez po
 **Mapa (`map.h`)**: `KEY`, `MAP_VALUE`, `MAP`, `FN`, `HASH(key)` (já misturado com a semente aleatória da execução), `KEYS_EQUAL`, `KEY_ARRAY`/`KEY_ARRAY_FN` (para percorrer em ordem). Invariantes: `capacity` é potência de 2; `states[i]` é 0 (vazio), 1 (ocupado) ou 2 (removido); `used_slots` (ocupados + removidos) fica abaixo de `capacity / 2`, então toda sondagem acha um vazio. Percorrer usa uma cópia ordenada das chaves.
 
 **Grafo (`graph.h`)**: `WEIGHT`, `GRAPH`, `FN`. As arestas entram numa lista (`aresta` é O(1)); na primeira consulta a `vizinhos`, a lista vira adjacência compacta (CSR) em O(n + m): os vizinhos de u são `adjacency[adjacency_start[u] .. adjacency_start[u + 1])`, na ordem em que foram adicionados. Uma aresta nova marca o grafo para remontar na próxima consulta. A adjacência fica na arena, então um laço que adiciona arestas no meio continua percorrendo a versão antiga, sem ponteiro inválido.
+
+## Strings
+
+- Uma string é um `ArrayU8` (vetor 1D de `TYPE_CHAR`); `is_string`/`is_text_type` reconhecem esse tipo.
+- Dentro de vetor, heap, fila ou mapa a célula tem tipo `TYPE_STRING` e vira o template `ArrayStr`
+  (`STRING_ELEMENT`, `KIND 3`). Guardar copia (`array_u8_copy`), e ler a célula devolve uma string nova (`value_of_cell`).
+- `rt/string.h` entra logo depois do template `ArrayU8`. Ele tem leitura de palavra e de linha, escrita, comparação, hash FNV-1a e junção.
+- `str_sort` tem três fases:
+  1. radix LSD sobre os 8 primeiros bytes (big-endian), pulando os bytes iguais em todas as chaves;
+  2. inserção só nos blocos de prefixo igual;
+  3. permutação no lugar pelos ciclos.
+  Medido: 0,81× o tempo do `std::sort` de `vector<string>`, com 10⁶ palavras.
+- `read_line` logo depois de um número pula o resto vazio da linha (`input_after_token`), como o `getline` depois de `cin >> ws` faria.
+

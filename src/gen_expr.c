@@ -128,7 +128,8 @@ void gen_call2(TextBuffer *out, const char *function_suffix, Expression *item, E
 /* comparação de tuplas: ordem lexicográfica (campo a campo) */
 void gen_tuple_comparison(TextBuffer *out, Expression *expr)
 {
-    const char *prefix = tuple_element_kind(expr->first->type)->suffix;
+    const char *prefix =
+        is_text_type(expr->first->type) ? "str" : tuple_element_kind(expr->first->type)->suffix;
     char less_name[600];
     char equal_name[600];
 
@@ -180,9 +181,20 @@ void gen_binary(TextBuffer *out, Expression *expr)
     }
 
     if (expr->operation >= PUNCT_EQUAL && expr->operation <= PUNCT_GREATER_EQUAL &&
-        expr->first->type->kind == TYPE_TUPLE)
+        (expr->first->type->kind == TYPE_TUPLE || is_text_type(expr->first->type)))
     {
         gen_tuple_comparison(out, expr);
+        return;
+    }
+
+    /* texto + texto ou texto + caractere */
+    if (expr->operation == PUNCT_PLUS && is_text_type(expr->first->type))
+    {
+        text_append(out, is_text_type(expr->second->type) ? "str_concat(" : "str_concat_char(");
+        gen_expression(out, expr->first);
+        text_append(out, ", ");
+        gen_expression(out, expr->second);
+        text_append(out, ")");
         return;
     }
 
@@ -476,6 +488,13 @@ void gen_call(TextBuffer *out, Expression *expr)
             text_appendf(out, ", %d, %d)", expr->arguments.count == 2, expr->line);
             return;
 
+        case BUILTIN_TEXTO:
+            text_append(out, expr->arguments.items[0]->type->kind == TYPE_REAL ? "str_from_real("
+                                                                               : "str_from_int(");
+            gen_expression(out, expr->arguments.items[0]);
+            text_append(out, ")");
+            return;
+
         case BUILTIN_PREFIXO:
             gen_prefix(out, expr);
             return;
@@ -623,6 +642,15 @@ void gen_lvalue(TextBuffer *out, Expression *expr)
 /* valor que vai ser guardado numa célula: com ': int32', confere se cabe */
 void gen_stored_value(TextBuffer *out, Type *cell, Expression *value)
 {
+    /* string guardada em estrutura é copiada: mudar a original depois não muda a guardada */
+    if (is_text_type(value->type) && (cell_root(cell)->kind == TYPE_STRING || is_text_type(cell)))
+    {
+        text_append(out, "array_u8_copy(");
+        gen_expression(out, value);
+        text_append(out, ")");
+        return;
+    }
+
     if (!is_checked_int32(cell))
     {
         gen_expression(out, value);
@@ -639,6 +667,17 @@ void gen_method_call(TextBuffer *out, Expression *expr)
 {
     Type *type = expr->first->type;
     Method method = method_of(type->kind, expr->text, generated_program->language);
+
+    if (type->kind == TYPE_ARRAY && method == METHOD_ADICIONAR && is_text_type(type) &&
+        is_text_type(expr->arguments.items[0]->type))
+    {
+        text_append(out, "str_append(");
+        gen_array_pointer(out, expr->first);
+        text_append(out, ", ");
+        gen_expression(out, expr->arguments.items[0]);
+        text_appendf(out, ", %d)", expr->line);
+        return;
+    }
 
     if (type->kind == TYPE_ARRAY)
     {
@@ -735,8 +774,13 @@ void gen_method_call(TextBuffer *out, Expression *expr)
 
     for (int i = 0; i < expr->arguments.count; i++)
     {
-        text_append(out, ", ");
-        gen_expression(out, expr->arguments.items[i]);
+        Expression *argument = expr->arguments.items[i];
+        int copy = is_text_type(argument->type) &&
+                   (method == METHOD_INSERIR || method == METHOD_ENFILEIRAR);
+
+        text_append(out, copy ? ", array_u8_copy(" : ", ");
+        gen_expression(out, argument);
+        text_append(out, copy ? ")" : "");
     }
 
     if (method == METHOD_ARESTA && expr->arguments.count == 2)
@@ -781,8 +825,14 @@ void gen_expression(TextBuffer *out, Expression *expr)
         gen_real(out, expr->real_value);
         return;
 
+    case EXPR_CHAR:
+        text_appendf(out, "INT64_C(%lld)", (long long)expr->int_value);
+        return;
+
     case EXPR_STRING:
+        text_append(out, "str_from(");
         emit_c_string(out, expr->text);
+        text_appendf(out, ", %d)", (int)strlen(expr->text));
         return;
 
     case EXPR_NAME:
@@ -891,6 +941,15 @@ void gen_expression(TextBuffer *out, Expression *expr)
 void gen_read(TextBuffer *out, Expression *argument, int depth)
 {
     indent(out, depth);
+
+    /* string: ler(s) lê uma palavra (numa variável ou numa posição de vetor de strings) */
+    if (argument->type && is_text_type(argument->type) &&
+        (argument->kind == EXPR_NAME || argument->kind == EXPR_INDEX))
+    {
+        gen_lvalue(out, argument);
+        text_appendf(out, " = str_read(%d);\n", argument->line);
+        return;
+    }
 
     if (argument->kind == EXPR_NAME && argument->variable->type->kind == TYPE_ARRAY)
     {
@@ -1010,9 +1069,22 @@ void gen_write(TextBuffer *out, Expression *expr, int depth)
             indent(out, depth);
         }
 
-        if (argument->type->kind == TYPE_STRING)
+        if (argument->kind == EXPR_STRING)
         {
+            /* literal: escreve direto, sem criar string */
             text_append(out, "write_text(");
+            emit_c_string(out, argument->text);
+            text_append(out, ");\n");
+            continue;
+        }
+
+        if (is_text_type(argument->type))
+        {
+            text_append(out, "str_write(");
+        }
+        else if (argument->type->kind == TYPE_CHAR)
+        {
+            text_append(out, "write_char(");
         }
         else if (argument->type->kind == TYPE_ARRAY)
         {

@@ -301,6 +301,14 @@ void gen_statement(TextBuffer *out, Statement *stmt, int depth)
             builtin = builtin_of(expr->text, LANG_EN);
         }
 
+        if (builtin == BUILTIN_LER_LINHA)
+        {
+            indent(out, depth);
+            gen_variable(out, expr->arguments.items[0]->variable, expr->line);
+            text_appendf(out, " = str_read_line(%d);\n", expr->line);
+            return;
+        }
+
         if (builtin == BUILTIN_LER)
         {
             for (int i = 0; i < expr->arguments.count; i++)

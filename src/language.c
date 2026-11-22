@@ -74,6 +74,8 @@ static const char *BUILTIN_NAMES[][2] = {
     [BUILTIN_FENWICK] = {"fenwick", "fenwick"},
     [BUILTIN_SEGTREE] = {"segtree", "segtree"},
     [BUILTIN_RMQ] = {"rmq", "rmq"},
+    [BUILTIN_TEXTO] = {"texto", "str"},
+    [BUILTIN_LER_LINHA] = {"ler_linha", "read_line"},
 };
 
 /** Qual nome nativo (ler, soma, heap...) é esse nome no idioma dado. */

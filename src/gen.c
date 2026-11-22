@@ -5,6 +5,7 @@
 #include "rt_fenwick.inc"
 #include "rt_rmq.inc"
 #include "rt_segtree.inc"
+#include "rt_string.inc"
 #include "rt_graph.inc"
 #include "rt_heap.inc"
 #include "rt_map.inc"
@@ -37,6 +38,12 @@ int element_used[ELEMENT_KIND_COUNT];
 /* tuplas usadas: cada formato vira uma struct e um template de vetor */
 ElementKindList tuples;
 TemplateUseList templates;
+
+/* algum vetor, heap, fila ou mapa guarda strings: entra o template ArrayStr */
+int strings_in_containers;
+
+const ElementKind STRING_ELEMENT = {"str",       "Str",      "ArrayU8", "ArrayU8", "str_read",
+                                    "str_write", "str_less", "",        "",        3};
 /* vetores do #decl já garantidos no trecho que está sendo gerado */
 VariableSet ensured_lazy;
 /*
@@ -183,14 +190,16 @@ void emit_template(TextBuffer *out, const TemplateUse *template_use)
     }
     else if (template_use->kind == TEMPLATE_MAP)
     {
-        const char *hash_macro = element_kind->kind == 2
+        const char *hash_macro = element_kind->kind >= 2
                                      ? format_string("%s_hash(key)", element_kind->suffix)
                                  : element_kind->kind == 1 ? "hash_real(key)"
                                                            : "hash_int(key)";
-        const char *equal_macro = element_kind->kind == 2
+        const char *equal_macro = element_kind->kind >= 2
                                       ? format_string("%s_equal(left, right)", element_kind->suffix)
                                       : "((left) == (right))";
 
+        text_appendf(out, "#define KEY_STORE(key) %s\n",
+                     element_kind == &STRING_ELEMENT ? "array_u8_copy(key)" : "(key)");
         text_appendf(out, "#define KEY %s\n#define MAP_VALUE %s\n#define MAP %s\n",
                      element_kind->c_type, template_use->value->c_type, template_use->type_name);
         text_appendf(out, "#define HASH(key) %s\n#define KEYS_EQUAL(left, right) %s\n", hash_macro,
@@ -200,7 +209,7 @@ void emit_template(TextBuffer *out, const TemplateUse *template_use)
         emit_text(out, rt_map_h, rt_map_h_len);
         text_append(out,
                     "#undef KEY\n#undef MAP_VALUE\n#undef MAP\n#undef HASH\n#undef KEYS_EQUAL\n"
-                    "#undef KEY_ARRAY\n#undef KEY_ARRAY_FN\n");
+                    "#undef KEY_ARRAY\n#undef KEY_ARRAY_FN\n#undef KEY_STORE\n");
     }
     else if (template_use->kind == TEMPLATE_FENWICK)
     {
@@ -327,6 +336,17 @@ void generate_c(Program *parsed_program, TextBuffer *out)
         {
             emit_array_template(out, &ELEMENT_KINDS[kind_index]);
         }
+    }
+
+    /* strings são ArrayU8: o runtime delas vem logo depois desse template */
+    if (element_used[ELEMENT_U8])
+    {
+        emit_text(out, rt_string_h, rt_string_h_len);
+    }
+
+    if (strings_in_containers)
+    {
+        emit_array_template(out, &STRING_ELEMENT);
     }
 
     for (int i = 0; i < tuples.count; i++)

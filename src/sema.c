@@ -15,6 +15,7 @@ Type INT_TYPE = {.kind = TYPE_INT};
 Type REAL_TYPE = {.kind = TYPE_REAL};
 Type STRING_TYPE = {.kind = TYPE_STRING};
 Type VOID_TYPE = {.kind = TYPE_VOID};
+Type CHAR_TYPE = {.kind = TYPE_CHAR};
 
 /* ---------- ler / escrever ---------- */
 
@@ -40,6 +41,12 @@ void check_read_argument(Expression *argument)
         if (variable->type->kind == TYPE_ARRAY)
         {
             resolve_unknown(variable->type->element);
+            variable->is_declared_string = 0;
+            return;
+        }
+
+        if (variable->type->kind == TYPE_STRING)
+        {
             return;
         }
 
@@ -55,7 +62,7 @@ void check_read_argument(Expression *argument)
     {
         Type *type = resolve_unknown(check_expression(argument));
 
-        if (!is_number(type))
+        if (!is_number(type) && !(is_string(type) && holds_strings(argument)))
         {
             FAIL_AT_NODE(argument, "ler() precisa chegar até os elementos (isto é %s)",
                          type_name(type));
@@ -86,6 +93,18 @@ void check_read_argument(Expression *argument)
     }
 
     Variable *variable = base->kind == EXPR_NAME ? lookup_variable(base->text) : NULL;
+
+    if (variable && variable->is_declared_string)
+    {
+        Type *cell = new_type(TYPE_STRING);
+
+        variable->is_declared_string = 0;
+        variable->type = array_type(cell, dimension_count);
+        base->variable = variable;
+        base->type = variable->type;
+        argument->inclusive = 1;
+        return;
+    }
 
     if (base->kind == EXPR_NAME &&
         (!variable || (variable->type->kind != TYPE_ARRAY && variable->type != &INT_TYPE &&
@@ -136,14 +155,24 @@ void check_read_argument(Expression *argument)
 
 /* ---------- comandos ---------- */
 
+/** O alvo é uma posição de vetor de strings ou um valor de mapa de strings. */
+int holds_strings(Expression *target)
+{
+    if (target->kind != EXPR_INDEX)
+    {
+        return 0;
+    }
+
+    Type *container = target->first->type;
+    Type *cell = container->kind == TYPE_MAP     ? container->value
+                 : container->kind == TYPE_ARRAY ? container->element
+                                                 : NULL;
+    return cell && cell_root(cell)->kind == TYPE_STRING;
+}
+
 void check_assignment(Statement *stmt)
 {
     Expression *target = stmt->first;
-
-    if (stmt->second->kind == EXPR_STRING)
-    {
-        FAIL_AT_NODE(stmt->second, "texto por enquanto só pode aparecer em escrever()");
-    }
 
     Type *value_type = check_expression(stmt->second);
 
@@ -215,7 +244,7 @@ void check_assignment(Statement *stmt)
 
     Type *type = check_expression(target);
 
-    if (type->kind == TYPE_ARRAY)
+    if (type->kind == TYPE_ARRAY && !holds_strings(target))
     {
         FAIL_AT_NODE(target,
                      "não dá para atribuir a uma linha inteira; atribua elemento por elemento");
@@ -269,17 +298,17 @@ void check_for_in(Statement *stmt)
 
         if (type->kind == TYPE_MAP)
         {
-            types[type_count++] = resolve_unknown(type->element);
+            types[type_count++] = value_of_cell(resolve_unknown(type->element));
 
             if (pattern_count == 2)
             {
-                types[type_count++] = resolve_unknown(type->value);
+                types[type_count++] = value_of_cell(resolve_unknown(type->value));
             }
         }
         else if (type->kind == TYPE_ARRAY)
         {
             Type *element_type = type->dimension_count == 1
-                                     ? resolve_unknown(type->element)
+                                     ? value_of_cell(resolve_unknown(type->element))
                                      : array_type(type->element, type->dimension_count - 1);
 
             if (pattern_count == 0)
@@ -375,22 +404,30 @@ void check_statement(Statement *stmt, int top, int *seen_code)
             {
                 Builtin builtin = builtin_of(declaration->type_name, checked_program->language);
 
-                if (builtin != BUILTIN_INT && builtin != BUILTIN_REAL && builtin != BUILTIN_INT32)
+                if (builtin != BUILTIN_INT && builtin != BUILTIN_REAL && builtin != BUILTIN_INT32 &&
+                    builtin != BUILTIN_TEXTO)
                 {
                     fail_at(declaration->line, declaration->column,
-                            "tipo desconhecido '%s' (use int, int32 ou real)",
+                            "tipo desconhecido '%s' (use int, int32, real ou str)",
                             declaration->type_name);
                 }
 
-                cell->kind = builtin == BUILTIN_REAL ? TYPE_REAL : TYPE_INT;
+                cell->kind = builtin == BUILTIN_REAL    ? TYPE_REAL
+                             : builtin == BUILTIN_TEXTO ? TYPE_STRING
+                                                        : TYPE_INT;
                 cell->is_int32 = builtin == BUILTIN_INT32;
             }
 
+            /* #decl s: str é uma string (ler(s) lê palavra); com [n], vetor de strings */
+            int is_text = cell->kind == TYPE_STRING && !declaration->dimensions.count;
             Variable *variable = declare_variable(
                 declaration->name,
                 declaration->dimensions.count ? array_type(cell, declaration->dimensions.count)
+                : is_text                     ? new_string_type()
                                               : cell,
                 declaration->line);
+
+            variable->is_declared_string = is_text;
 
             if (declaration->dimensions.count)
             {
@@ -421,6 +458,35 @@ void check_statement(Statement *stmt, int top, int *seen_code)
                 check_read_argument(expr->arguments.items[i]);
             }
 
+            return;
+        }
+
+        if (builtin == BUILTIN_LER_LINHA)
+        {
+            check_argument_count(expr, 1, 1);
+            Expression *target = expr->arguments.items[0];
+
+            if (target->kind != EXPR_NAME)
+            {
+                FAIL_AT_NODE(target, "ler_linha() lê numa variável de texto");
+            }
+
+            Variable *variable = lookup_variable(target->text);
+
+            if (!variable)
+            {
+                variable = declare_variable(target->text, new_string_type(), target->line);
+            }
+
+            if (!is_string(variable->type))
+            {
+                FAIL_AT_NODE(target, "'%s' é %s, e ler_linha() lê texto", target->text,
+                             type_name(variable->type));
+            }
+
+            variable->is_declared_string = 0;
+            target->variable = variable;
+            target->type = variable->type;
             return;
         }
 

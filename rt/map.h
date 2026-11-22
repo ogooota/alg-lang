@@ -118,7 +118,7 @@ static MAP_VALUE *FN(_ref)(MAP *map, KEY key)
     }
 
     map->states[slot] = 1;
-    map->keys[slot] = key;
+    map->keys[slot] = KEY_STORE(key);
     memset(&map->values[slot], 0, sizeof(MAP_VALUE));
     map->count++;
     return &map->values[slot];

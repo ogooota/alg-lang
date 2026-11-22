@@ -91,11 +91,24 @@ const ElementKind *tuple_element_kind(Type *type)
 }
 
 /* menor tipo que guarda a faixa de valores provada pela análise (range.c) */
+/** String = vetor 1D de caracteres. */
+int is_text_type(Type *type)
+{
+    return type->kind == TYPE_ARRAY && type->dimension_count == 1 &&
+           cell_root(type->element)->kind == TYPE_CHAR;
+}
+
 int scalar_element_kind(Type *cell)
 {
     if (cell->kind == TYPE_REAL)
     {
         return ELEMENT_REAL;
+    }
+
+    /* caractere de string: sempre 1 byte */
+    if (cell->kind == TYPE_CHAR)
+    {
+        return ELEMENT_U8;
     }
 
     if (cell->is_int32)
@@ -142,6 +155,14 @@ const ElementKind *cell_element_kind(Type *cell)
     if (root->kind == TYPE_TUPLE)
     {
         return tuple_element_kind(root);
+    }
+
+    /* string guardada em estrutura: ArrayU8 por valor, com as funções str_* */
+    if (root->kind == TYPE_STRING)
+    {
+        element_used[ELEMENT_U8] = 1;
+        strings_in_containers = 1;
+        return &STRING_ELEMENT;
     }
 
     int kind_index = scalar_element_kind(root);
@@ -295,6 +316,10 @@ void emit_c_type(TextBuffer *out, Type *type)
 
     case TYPE_REAL:
         text_append(out, "double");
+        break;
+
+    case TYPE_CHAR:
+        text_append(out, "int64_t");
         break;
 
     case TYPE_VOID:

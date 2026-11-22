@@ -55,6 +55,7 @@ typedef enum
     TOKEN_INT,
     TOKEN_REAL,
     TOKEN_STRING,
+    TOKEN_CHAR,
     TOKEN_NAME,
 
     /* palavras-chave (o mesmo enum serve para pt e en) */
@@ -177,7 +178,8 @@ typedef enum
     TYPE_DSU,
     TYPE_FENWICK,
     TYPE_SEGTREE,
-    TYPE_RMQ
+    TYPE_RMQ,
+    TYPE_CHAR
 } TypeKind;
 
 typedef struct Type Type;
@@ -234,7 +236,8 @@ typedef enum
     EXPR_VECTOR,
     EXPR_GENERATOR,
     EXPR_TUPLE,
-    EXPR_MAP
+    EXPR_MAP,
+    EXPR_CHAR
 } ExpressionKind;
 
 /* Campos first/second/third de cada tipo de expressão: tabela em docs/compilador.md. */
@@ -310,9 +313,11 @@ struct Variable
     Type *type;
     int is_global;
     int is_parameter;
-    int is_lazy;          /* #decl v[n][m]: vetor alocado no primeiro uso */
-    int used_in_function; /* citada dentro de alguma função: precisa ser global no C */
-    int growths;          /* análise de faixa (range.c) */
+    int is_lazy;            /* #decl v[n][m]: vetor alocado no primeiro uso */
+    int is_declared_string; /* #decl s: str (read(s) lê palavra; read(s[0..n]) lê vetor de strings)
+                             */
+    int used_in_function;   /* citada dentro de alguma função: precisa ser global no C */
+    int growths;            /* análise de faixa (range.c) */
     int64_t low;
     int64_t high;
     int line;
@@ -392,7 +397,9 @@ typedef enum
     BUILTIN_CONJUNTOS,
     BUILTIN_FENWICK,
     BUILTIN_SEGTREE,
-    BUILTIN_RMQ
+    BUILTIN_RMQ,
+    BUILTIN_TEXTO,
+    BUILTIN_LER_LINHA
 } Builtin;
 
 /* métodos das estruturas: o nome depende do tipo do objeto */

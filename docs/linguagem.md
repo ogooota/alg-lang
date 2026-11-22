@@ -48,7 +48,7 @@ make test                     # roda tests/cases/*.alg
 | Memória | arena por execução (tudo é liberado no fim) | ✅ |
 | Pilha | o programa roda com 256 MB de pilha (recursão funda) | ✅ |
 | Unicode | `≤ ≥ ≠ ← ∈` como sinônimos opcionais | ✅ |
-| Texto | `ler(s)`, `s[i]`, `s[i..j]`, `tam(s)`, `==`, `<` | ⏳ |
+| Texto (strings) | seção "Texto" abaixo | ✅ |
 | Conjunto | `conj {}`; o compilador escolhe hash ou árvore pelo uso | ⏳ |
 | Compreensão | `{x em v se x > 0}` vetor; `conj {...}` conjunto | ⏳ |
 | Operações de conjunto | `uniao`, `inter`, `menos` (o `em` já funciona com mapa) | ⏳ |
@@ -120,6 +120,31 @@ fn fib(k) {
 
 escrever(a, "texto", v, grid)
 ```
+
+## Texto (strings)
+
+Uma string é um vetor de caracteres que pode ser alterado no lugar.
+
+| Recurso | en | pt |
+|---|---|---|
+| literal | `"abc"` | `"abc"` |
+| caractere | `'a'`, `'\n'`; `s[i]` devolve um caractere | igual |
+| conta com caractere | `c - 'a'` é inteiro; `s[i] = 'a' + 2` grava o caractere | igual |
+| tamanho, fatia, cópia | `len(s)`, `s[i..j]` (view), `copy(s)` | `tam(s)`, `s[i..j]`, `copia(s)` |
+| comparar | `==`, `!=`, `<`, `<=`, `>`, `>=` (ordem do dicionário, por byte) | igual |
+| juntar | `s + t` (nova string), `s + c` | igual |
+| acrescentar | `s.add(c)`, `s.add(t)` (no fim, O(1) amortizado) | `s.adicionar(...)` |
+| número → texto | `str(n)` | `texto(n)` |
+| ler | `read(s)` lê uma palavra; `read_line(s)` lê a linha inteira | `ler(s)`, `ler_linha(s)` |
+| escrever | `write(s)` escreve o texto; `write(c)` escreve o caractere | `escrever(...)` |
+| percorrer | `for c in s` | `para c em s` |
+| ordenar | `sort(s)` ordena os caracteres; vetor de strings ordena em ordem de dicionário | `ordenar(...)` |
+
+Regras:
+- `read(s)` lê uma palavra quando `s` é string: declarada com `#decl s: str` (pt: `texto`), ou já usada como string antes. Sem isso, `read(x)` continua lendo um inteiro. `read_line(s)` sempre cria string.
+- Vetor de strings: `#decl names: str;` e depois `read(names[0..n])`, ou `names = {}` com `names.add(s)`.
+- Strings guardadas em vetor, heap, fila ou como chave de mapa são **copiadas**: mudar a string depois não muda o que foi guardado. `t = s` entre variáveis compartilha os dados, como nos vetores.
+- Mapa com chave string: `count = map {}`, `count[word] += 1`; percorre em ordem de dicionário.
 
 ## Técnicas nativas
 

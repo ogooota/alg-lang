@@ -71,6 +71,8 @@ extern Program *generated_program;
 extern int element_used[ELEMENT_KIND_COUNT];
 extern ElementKindList tuples;
 extern TemplateUseList templates;
+extern int strings_in_containers;
+extern const ElementKind STRING_ELEMENT;
 extern VariableSet ensured_lazy;
 extern const char *PRAGMAS;
 
@@ -79,6 +81,7 @@ void emit_identifier(TextBuffer *out, const char *prefix, const char *name);
 Type *resolve_unknown_type(Type *type);
 char *format_string(const char *format_text, const char *argument);
 const ElementKind *tuple_element_kind(Type *type);
+int is_text_type(Type *type);
 int scalar_element_kind(Type *cell);
 const ElementKind *cell_element_kind(Type *cell);
 const char *array_suffix(Type *array_type);

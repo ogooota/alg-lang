@@ -30,8 +30,8 @@ syntax match algFloat "\<\d\+\.\d\+\>"
 syntax keyword algType int real int32
 
 " nomes nativos
-syntax keyword algBuiltin ler escrever tam copia soma min max ordenar heap fila grafo mapa conj prefixo busca mdc mmc potmod crivo conjuntos fenwick segtree rmq
-syntax keyword algBuiltin read write len copy sum sort queue graph map set prefix search gcd lcm powmod sieve dsu
+syntax keyword algBuiltin ler escrever tam copia soma min max ordenar heap fila grafo mapa conj prefixo busca mdc mmc potmod crivo conjuntos fenwick segtree rmq texto ler_linha
+syntax keyword algBuiltin read write len copy sum sort queue graph map set prefix search gcd lcm powmod sieve dsu str read_line
 syntax keyword algWord maior dirigido greater directed
 
 " métodos das estruturas (depois do ponto)
@@ -49,6 +49,7 @@ syntax match algOperator "≤\|≥\|≠\|←\|∈\|∪\|∩\|∀\|∃"
 " texto e comentário
 syntax match algEscape "\\[nt\"\\]" contained
 syntax region algString start=+"+ skip=+\\"+ end=+"+ contains=algEscape oneline
+syntax match algCharacter "'\\\=.'"
 syntax keyword algTodo TODO FIXME XXX contained
 syntax match algComment "//.*$" contains=algTodo
 
@@ -72,6 +73,7 @@ highlight default link algReserved Keyword
 highlight default link algOperator Operator
 highlight default link algEscape SpecialChar
 highlight default link algString String
+highlight default link algCharacter Character
 highlight default link algTodo Todo
 highlight default link algComment Comment
 

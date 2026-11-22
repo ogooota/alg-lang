@@ -5,7 +5,7 @@ import os, subprocess, sys, time
 HERE = os.path.dirname(os.path.abspath(__file__))
 ALG = os.path.join(HERE, "..", "alg")
 OUT = os.path.join(HERE, "out")
-PROBS = sys.argv[1:] or ["prefix", "knap", "sieve", "fib", "lcs", "sort", "dijkstra", "bfs", "mapa", "dsu", "fenwick", "segtree", "rmq", "primes"]
+PROBS = sys.argv[1:] or ["prefix", "knap", "sieve", "fib", "lcs", "sort", "dijkstra", "bfs", "mapa", "dsu", "fenwick", "segtree", "rmq", "primes", "words", "strsort"]
 RUNS = 5
 
 

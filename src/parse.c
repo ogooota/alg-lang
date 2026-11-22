@@ -201,6 +201,12 @@ static Expression *parse_primary(void)
         expr->real_value = token->real_value;
         return expr;
 
+    case TOKEN_CHAR:
+        position++;
+        expr = new_expression(EXPR_CHAR, token);
+        expr->int_value = token->int_value;
+        return expr;
+
     case TOKEN_STRING:
         position++;
         expr = new_expression(EXPR_STRING, token);

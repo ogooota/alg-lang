@@ -160,6 +160,9 @@ static char input_buffer[(1 << 16) + 1] = {'!'};
 static size_t input_position;
 static size_t input_length;
 
+/* a última leitura foi de um token (número ou palavra): read_line pula o resto vazio da linha */
+static int input_after_token;
+
 /* devolve o próximo caractere sem consumir; -1 no fim da entrada */
 static int peek_input(void)
 {
@@ -227,6 +230,8 @@ static size_t read_token(char *buffer, size_t capacity)
 /** Caminho lento: número na fronteira entre blocos, entrada interativa ou erro. */
 __attribute__((noinline)) static int64_t read_int_slow(int line)
 {
+    input_after_token = 1;
+
     char token[64];
     char *cursor = token;
 
@@ -291,6 +296,7 @@ static inline int64_t read_int(int line)
         if (cursor < end && (unsigned char)*cursor <= ' ')
         {
             input_position = (size_t)(cursor - input_buffer);
+            input_after_token = 1;
             return negative ? (int64_t)(0 - value) : (int64_t)value;
         }
     }
@@ -300,6 +306,8 @@ static inline int64_t read_int(int line)
 
 static double read_real(int line)
 {
+    input_after_token = 1;
+
     char token[128];
     char *parsed_end;
 

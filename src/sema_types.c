@@ -51,7 +51,27 @@ Type *resolve_unknown(Type *type)
 /** Diz se o tipo é inteiro ou real. */
 int is_number(Type *type)
 {
-    return type->kind == TYPE_INT || type->kind == TYPE_REAL;
+    return type->kind == TYPE_INT || type->kind == TYPE_REAL || type->kind == TYPE_CHAR;
+}
+
+/** String = vetor 1D de caracteres. */
+int is_string(Type *type)
+{
+    return type->kind == TYPE_ARRAY && type->dimension_count == 1 &&
+           cell_root(type->element)->kind == TYPE_CHAR;
+}
+
+/** Tipo novo de string (cada uma com sua célula de caractere). */
+Type *new_string_type(void)
+{
+    Type *cell = new_type(TYPE_CHAR);
+    return array_type(cell, 1);
+}
+
+/* uma célula de estrutura que guarda strings tem tipo TYPE_STRING; quem lê recebe uma string */
+Type *value_of_cell(Type *cell)
+{
+    return cell->kind == TYPE_STRING ? new_string_type() : cell;
 }
 
 /** Nome legível de um tipo, para mensagens de erro. */
@@ -75,10 +95,18 @@ const char *type_name(Type *type)
     case TYPE_STRING:
         return "texto";
 
+    case TYPE_CHAR:
+        return "caractere";
+
     case TYPE_VOID:
         return "nada";
 
     case TYPE_ARRAY:
+        if (type->dimension_count == 1 && cell_root(type->element)->kind == TYPE_CHAR)
+        {
+            return "texto";
+        }
+
         snprintf(slot, 64, "vetor %dD de %s", type->dimension_count, type_name(type->element));
         return slot;
 
@@ -156,6 +184,11 @@ Type *owned_type(Type *type)
         return &REAL_TYPE;
     }
 
+    if (type->kind == TYPE_CHAR)
+    {
+        return &CHAR_TYPE;
+    }
+
     if (type->kind == TYPE_TUPLE)
     {
         Type *cell = new_type(TYPE_TUPLE);
@@ -226,7 +259,20 @@ void unify_types(Type *target, Type *source, Expression *location)
         return;
     }
 
-    if (target->kind == TYPE_REAL && source->kind == TYPE_INT)
+    if (target->kind == TYPE_REAL && (source->kind == TYPE_INT || source->kind == TYPE_CHAR))
+    {
+        return;
+    }
+
+    /* caractere e inteiro se convertem como em C */
+    if ((target->kind == TYPE_INT && source->kind == TYPE_CHAR) ||
+        (target->kind == TYPE_CHAR && source->kind == TYPE_INT))
+    {
+        return;
+    }
+
+    /* string guardada numa célula de estrutura */
+    if (target->kind == TYPE_STRING && is_string(source))
     {
         return;
     }
@@ -305,7 +351,24 @@ void store_in_cell(Type *cell, Type *type, Expression *location)
         type->kind = TYPE_INT;
     }
 
-    if (type->kind != TYPE_INT && type->kind != TYPE_REAL && type->kind != TYPE_TUPLE)
+    /* string dentro de estrutura vira célula TYPE_STRING (guardada por cópia) */
+    if (is_string(type))
+    {
+        if (cell->kind == TYPE_UNKNOWN)
+        {
+            cell->kind = TYPE_STRING;
+        }
+
+        if (cell->kind != TYPE_STRING)
+        {
+            FAIL_AT_NODE(location, "esperava %s, mas o valor é texto", type_name(cell));
+        }
+
+        return;
+    }
+
+    if (type->kind != TYPE_INT && type->kind != TYPE_REAL && type->kind != TYPE_TUPLE &&
+        type->kind != TYPE_CHAR)
     {
         FAIL_AT_NODE(location, "não dá para guardar %s aqui", type_name(type));
     }
@@ -316,7 +379,13 @@ void store_in_cell(Type *cell, Type *type, Expression *location)
         return;
     }
 
-    if (cell->kind == TYPE_REAL && type->kind == TYPE_INT)
+    if (cell->kind == TYPE_REAL && (type->kind == TYPE_INT || type->kind == TYPE_CHAR))
+    {
+        return;
+    }
+
+    if ((cell->kind == TYPE_INT && type->kind == TYPE_CHAR) ||
+        (cell->kind == TYPE_CHAR && type->kind == TYPE_INT))
     {
         return;
     }
@@ -395,5 +464,5 @@ int same_signature(Type *left_type, Type *right_type)
 /* valor que sai de uma estrutura (heap, fila, vetor): sem tipo ainda vira inteiro */
 Type *taken_value(Type *cell)
 {
-    return resolve_unknown(cell);
+    return value_of_cell(resolve_unknown(cell));
 }

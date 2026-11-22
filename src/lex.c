@@ -79,6 +79,9 @@ const char *token_name(TokenKind kind)
     case TOKEN_REAL:
         return "número";
 
+    case TOKEN_CHAR:
+        return "caractere";
+
     case TOKEN_STRING:
         return "texto";
 
@@ -352,6 +355,9 @@ static char unescape(char character)
     case '"':
         return '"';
 
+    case '\'':
+        return '\'';
+
     case '\\':
         return '\\';
 
@@ -361,6 +367,47 @@ static char unescape(char character)
 }
 
 /** Lê um texto entre aspas, traduzindo os escapes. */
+/** Caractere entre aspas simples: 'a', '\\n', '\\''. Vira um token com o código do byte. */
+static void lex_char(Lexer *lexer)
+{
+    Token token = {0};
+
+    token.kind = TOKEN_CHAR;
+    token.line = lexer->line;
+    token.column = column_of(lexer);
+    lexer->cursor++;
+
+    unsigned char value = (unsigned char)*lexer->cursor;
+
+    if (value == '\\')
+    {
+        lexer->cursor++;
+        value = (unsigned char)unescape(*lexer->cursor);
+
+        if (!value)
+        {
+            fail_at(token.line, token.column,
+                    "escape desconhecido em caractere (use \\n \\t \\' \\\\)");
+        }
+    }
+    else if (value == '\'' || value == '\n' || !value)
+    {
+        fail_at(token.line, token.column, "caractere vazio: escreva algo entre as aspas, como 'a'");
+    }
+
+    lexer->cursor++;
+
+    if (*lexer->cursor != '\'')
+    {
+        fail_at(token.line, token.column,
+                "caractere tem uma letra só; para texto use aspas duplas");
+    }
+
+    lexer->cursor++;
+    token.int_value = value;
+    PUSH(lexer->tokens, token);
+}
+
 static void lex_string(Lexer *lexer)
 {
     Token token = {0};
@@ -527,6 +574,10 @@ TokenList tokenize(const char *source, Language *language)
         else if (character == '"')
         {
             lex_string(&lexer);
+        }
+        else if (character == '\'')
+        {
+            lex_char(&lexer);
         }
         else if (!lex_symbol(&lexer, OPERATORS, COUNT(OPERATORS)))
         {

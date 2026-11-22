@@ -66,3 +66,10 @@ for _ in range(q):
 write("rmq.in", f"{n} {q}\n{values}\n" + "\n".join(ranges) + "\n")
 write("primes.in", "20000000\n")
 print("entradas das estruturas geradas")
+
+# palavras: 10^6 palavras de 1 a 8 letras (muitas repetidas) para contar frequência e ordenar
+r = random.Random(13)
+n = 10**6
+words = ("".join(r.choice("abcdefgh") for _ in range(r.randint(1, 8))) for _ in range(n))
+write("words.in", f"{n}\n" + " ".join(words) + "\n")
+write("strsort.in", open(os.path.join(HERE, "words.in")).read())

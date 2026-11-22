@@ -170,7 +170,7 @@ static VALUE FN(_pop)(ARRAY *array, int line)
     return LOAD(array->data[array->length]);
 }
 
-#if KIND != 2
+#if KIND < 2
 
 /** Soma dos elementos. */
 static VALUE FN(_sum)(ARRAY array, int line)
@@ -539,6 +539,8 @@ static void FN(_sort)(ARRAY array, int descending, int line)
     {
         FN(_intro)(array.data, array.length, depth);
     }
+#elif KIND == 3
+    str_sort(array.data, array.length);
 #else
     FN(_intro)(array.data, array.length, depth);
 #endif
