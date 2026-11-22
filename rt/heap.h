@@ -69,32 +69,39 @@ static ELEMENT FN(_pop)(HEAP *heap, int line)
         return first;
     }
 
-    ELEMENT last = heap->data[heap->count];
+    /* de baixo para cima, como a libstdc++: o buraco desce até a folha comparando só os
+     * irmãos (~log n comparações) e o último elemento sobe dali (quase sempre fica perto) */
+    ELEMENT *data = heap->data;
+    int64_t count = heap->count;
+    ELEMENT last = data[count];
     int64_t hole = 0;
+    int64_t child = 1;
 
-    for (;;)
+    while (child < count)
     {
-        int64_t child = 2 * hole + 1;
-
-        if (child >= heap->count)
-        {
-            break;
-        }
-
-        if (child + 1 < heap->count && LESS(heap->data[child + 1], heap->data[child]))
+        if (child + 1 < count && LESS(data[child + 1], data[child]))
         {
             child++;
         }
 
-        if (!LESS(heap->data[child], last))
+        data[hole] = data[child];
+        hole = child;
+        child = 2 * hole + 1;
+    }
+
+    while (hole > 0)
+    {
+        int64_t parent = (hole - 1) / 2;
+
+        if (!LESS(last, data[parent]))
         {
             break;
         }
 
-        heap->data[hole] = heap->data[child];
-        hole = child;
+        data[hole] = data[parent];
+        hole = parent;
     }
 
-    heap->data[hole] = last;
+    data[hole] = last;
     return first;
 }

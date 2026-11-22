@@ -63,17 +63,25 @@ void emit_tuple(TextBuffer *out, const ElementKind *kind)
 
     text_appendf(out, "} %s;\n\n", type);
 
-    text_appendf(out, "static inline int %s_less(%s left, %s right)\n{\n", prefix, type, type);
+    /* uma expressão só, sem if: o gcc a compila sem desvio (cmov), e a escolha entre irmãos
+     * aleatórios do heap deixa de errar a previsão de desvio (medido: 2x no heap) */
+    text_appendf(out, "static inline int %s_less(%s left, %s right)\n{\n    return ", prefix, type,
+                 type);
 
     for (int i = 0; i < count - 1; i++)
     {
-        text_appendf(out,
-                     "    if (left.field_%d != right.field_%d)\n    {\n"
-                     "        return left.field_%d < right.field_%d;\n    }\n\n",
+        text_appendf(out, "left.field_%d < right.field_%d || (left.field_%d == right.field_%d && (",
                      i, i, i, i);
     }
 
-    text_appendf(out, "    return left.field_%d < right.field_%d;\n}\n\n", count - 1, count - 1);
+    text_appendf(out, "left.field_%d < right.field_%d", count - 1, count - 1);
+
+    for (int i = 0; i < count - 1; i++)
+    {
+        text_append(out, "))");
+    }
+
+    text_append(out, ";\n}\n\n");
 
     text_appendf(out, "static inline int %s_equal(%s left, %s right)\n{\n    return 1", prefix,
                  type, type);
