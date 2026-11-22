@@ -477,6 +477,122 @@ static inline uint64_t hash_real(double value)
     return mix_bits(raw_bits ^ hash_seed);
 }
 
+/* ---------- ordenação por prefixo (chaves de mapa, strings) ---------- */
+
+/* prefixo de 64 bits que preserva a ordem e a posição do item original */
+typedef struct
+{
+    uint64_t prefix;
+    uint64_t index;
+} OrderKey;
+
+/* desempate de blocos grandes: qsort não leva contexto, então ele fica aqui (um programa, uma thread) */
+static int (*order_tie_less)(uint64_t left, uint64_t right, const void *context);
+static const void *order_tie_context;
+
+static int order_tie_compare(const void *left, const void *right)
+{
+    uint64_t a = ((const OrderKey *)left)->index;
+    uint64_t b = ((const OrderKey *)right)->index;
+    return order_tie_less(a, b, order_tie_context) ? -1 : order_tie_less(b, a, order_tie_context);
+}
+
+/** Ordena por prefixo (radix LSD, pula bytes iguais em tudo); empates vão para less (pode ser NULL). */
+static void order_sort(OrderKey *keys, int64_t count,
+                       int (*less)(uint64_t left, uint64_t right, const void *context),
+                       const void *context)
+{
+    OrderKey *buffer = malloc((size_t)count * sizeof *buffer);
+    OrderKey *source = keys;
+    uint64_t all_or = 0;
+    uint64_t all_and = ~0ULL;
+
+    for (int64_t i = 0; i < count; i++)
+    {
+        all_or |= keys[i].prefix;
+        all_and &= keys[i].prefix;
+    }
+
+    for (int shift = 0; shift < 64; shift += 8)
+    {
+        if ((((all_or ^ all_and) >> shift) & 0xFF) == 0)
+        {
+            continue;
+        }
+
+        int64_t start[256] = {0};
+
+        for (int64_t i = 0; i < count; i++)
+        {
+            start[(source[i].prefix >> shift) & 0xFF]++;
+        }
+
+        for (int64_t digit = 0, total = 0; digit < 256; digit++)
+        {
+            int64_t size = start[digit];
+            start[digit] = total;
+            total += size;
+        }
+
+        OrderKey *target = source == keys ? buffer : keys;
+
+        for (int64_t i = 0; i < count; i++)
+        {
+            target[start[(source[i].prefix >> shift) & 0xFF]++] = source[i];
+        }
+
+        source = target;
+    }
+
+    if (source != keys)
+    {
+        memcpy(keys, source, (size_t)count * sizeof *keys);
+    }
+
+    free(buffer);
+
+    if (!less)
+    {
+        return;
+    }
+
+    /* blocos de prefixo igual: inserção nos pequenos, qsort nos grandes (nunca O(n²)) */
+    for (int64_t low = 0; low < count;)
+    {
+        int64_t high = low + 1;
+
+        while (high < count && keys[high].prefix == keys[low].prefix)
+        {
+            high++;
+        }
+
+        if (high - low > 16)
+        {
+            order_tie_less = less;
+            order_tie_context = context;
+            qsort(keys + low, (size_t)(high - low), sizeof *keys, order_tie_compare);
+        }
+        else
+        {
+            for (int64_t i = low + 1; i < high; i++)
+            {
+                OrderKey moving = keys[i];
+                int64_t j = i;
+
+                while (j > low && less(moving.index, keys[j - 1].index, context))
+                {
+                    keys[j] = keys[j - 1];
+                    j--;
+                }
+
+                keys[j] = moving;
+            }
+        }
+
+        low = high;
+    }
+}
+
 /* memória que cresce (estruturas): realloc com checagem */
 static void *grow_memory(void *block, size_t bytes)
 {
@@ -551,7 +667,130 @@ static int64_t powmod_int(int64_t base, int64_t exponent, int64_t modulus, int l
     return (int64_t)result;
 }
 
-/** Primos até limit (crivo de Eratóstenes); devolve o vetor e a quantidade em count. */
+/* crivo com roda módulo 30 (como o primesieve): byte b guarda 30b + {1,7,11,13,17,19,23,29},
+ * um bit cada; múltiplos de 2, 3 e 5 nem estão no vetor */
+enum
+{
+    SIEVE_SEGMENT_BYTES = 32768,         /* tamanho do L1: cada riscada cai no cache */
+    SIEVE_PATTERN_BYTES = 7 * 11 * 13 * 17 /* período do pré-crivo */
+};
+
+static const uint8_t SIEVE_RESIDUES[8] = {1, 7, 11, 13, 17, 19, 23, 29};
+
+/* bit do resto r (mod 30); 0xFF para restos que a roda não guarda */
+static const uint8_t SIEVE_BIT_OF[30] = {
+    0xFF, 0,    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 1,    0xFF, 0xFF, 0xFF, 2,    0xFF, 3,    0xFF,
+    0xFF, 0xFF, 4,    0xFF, 5,    0xFF, 0xFF, 0xFF, 6,    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 7};
+
+/* primo que risca: posição do próximo múltiplo (volta t, fase k) e as 8 posições de uma volta */
+typedef struct
+{
+    int64_t cycle;
+    int32_t phase;
+    int32_t prime;
+    uint32_t offsets[8];
+    uint8_t masks[8];
+} SievingPrime;
+
+/** Padrão periódico com os múltiplos de 7, 11, 13 e 17 já riscados (pré-crivo). */
+static uint8_t *sieve_pattern(void)
+{
+    static uint8_t *pattern;
+
+    if (pattern)
+    {
+        return pattern;
+    }
+
+    pattern = malloc(SIEVE_PATTERN_BYTES);
+    memset(pattern, 0xFF, SIEVE_PATTERN_BYTES);
+    static const int SMALL_PRIMES[] = {7, 11, 13, 17};
+
+    for (int k = 0; k < 4; k++)
+    {
+        for (int64_t multiple = SMALL_PRIMES[k]; multiple < 30LL * SIEVE_PATTERN_BYTES;
+             multiple += 2 * SMALL_PRIMES[k])
+        {
+            uint8_t bit = SIEVE_BIT_OF[multiple % 30];
+
+            if (bit != 0xFF)
+            {
+                pattern[multiple / 30] &= (uint8_t)~(1u << bit);
+            }
+        }
+    }
+
+    return pattern;
+}
+
+/** Risca os múltiplos de um primo no segmento [low, low + size) (em bytes). */
+static inline void sieve_cross_off(uint8_t *restrict segment, int64_t low, int64_t size,
+                                   SievingPrime *restrict sieving)
+{
+    int64_t prime = sieving->prime;
+    int64_t high = low + size;
+    int64_t cycle = sieving->cycle;
+    int phase = sieving->phase;
+
+    /* até o começo de uma volta */
+    while (phase != 0)
+    {
+        int64_t position = prime * cycle + sieving->offsets[phase];
+
+        if (position >= high)
+        {
+            sieving->cycle = cycle;
+            sieving->phase = phase;
+            return;
+        }
+
+        segment[position - low] &= sieving->masks[phase];
+        phase = (phase + 1) & 7;
+        cycle += phase == 0;
+    }
+
+    /* voltas inteiras: 8 riscadas com deslocamentos fixos, avança p bytes */
+    const uint32_t o0 = sieving->offsets[0], o1 = sieving->offsets[1], o2 = sieving->offsets[2],
+                   o3 = sieving->offsets[3], o4 = sieving->offsets[4], o5 = sieving->offsets[5],
+                   o6 = sieving->offsets[6], o7 = sieving->offsets[7];
+    const uint8_t m0 = sieving->masks[0], m1 = sieving->masks[1], m2 = sieving->masks[2],
+                  m3 = sieving->masks[3], m4 = sieving->masks[4], m5 = sieving->masks[5],
+                  m6 = sieving->masks[6], m7 = sieving->masks[7];
+    int64_t base = prime * cycle - low;
+
+    for (; base + o7 < size; base += prime)
+    {
+        uint8_t *at = segment + base;
+        at[o0] &= m0;
+        at[o1] &= m1;
+        at[o2] &= m2;
+        at[o3] &= m3;
+        at[o4] &= m4;
+        at[o5] &= m5;
+        at[o6] &= m6;
+        at[o7] &= m7;
+    }
+
+    cycle = (base + low) / prime;
+
+    /* o resto da última volta */
+    for (phase = 0;; phase++)
+    {
+        int64_t position = prime * cycle + sieving->offsets[phase];
+
+        if (position >= high)
+        {
+            break;
+        }
+
+        segment[position - low] &= sieving->masks[phase];
+    }
+
+    sieving->cycle = cycle;
+    sieving->phase = phase;
+}
+
+/** Primos até limit: Eratóstenes segmentado com roda 30, pré-crivo de 7..17 e extração por ctz. */
 static int64_t *sieve_primes(int64_t limit, int64_t *count, int line)
 {
     if (limit < 0)
@@ -559,27 +798,138 @@ static int64_t *sieve_primes(int64_t limit, int64_t *count, int line)
         runtime_error(line, "crivo(%lld): o limite precisa ser >= 0", (long long)limit);
     }
 
-    uint8_t *composite = calloc((size_t)limit + 2, 1);
-    int64_t *primes = grow_memory(NULL, (size_t)(limit / 2 + 2) * sizeof(int64_t));
+    /* π(x) < 1,25506·x/ln x (Rosser e Schoenfeld): tamanho certo sem crescer o vetor */
+    int64_t bound = limit < 100 ? 32 : (int64_t)(1.25506 * (double)limit / log((double)limit)) + 32;
+    int64_t *primes = grow_memory(NULL, (size_t)bound * sizeof(int64_t));
     int64_t found = 0;
 
-    for (int64_t i = 2; i <= limit; i++)
+    for (int64_t small = 2; small <= 5 && small <= limit; small += 1 + (small > 2))
     {
-        if (composite[i])
+        primes[found++] = small;
+    }
+
+    if (limit < 7)
+    {
+        *count = found;
+        return primes;
+    }
+
+    int64_t root = (int64_t)sqrt((double)limit);
+
+    while (root * root > limit)
+    {
+        root--;
+    }
+
+    while ((root + 1) * (root + 1) <= limit)
+    {
+        root++;
+    }
+
+    /* primos que riscam: 19..√limit (7..17 já estão no padrão) */
+    uint8_t *small_composite = calloc((size_t)root + 1, 1);
+    SievingPrime *sieving = malloc(((size_t)root / 2 + 2) * sizeof *sieving);
+    int64_t sieving_count = 0;
+
+    for (int64_t p = 3; p <= root; p += 2)
+    {
+        if (small_composite[p])
         {
             continue;
         }
 
-        primes[found] = i;
-        found++;
-
-        for (int64_t multiple = i * i; multiple <= limit; multiple += i)
+        for (int64_t multiple = p * p; multiple <= root; multiple += 2 * p)
         {
-            composite[multiple] = 1;
+            small_composite[multiple] = 1;
+        }
+
+        if (p < 19)
+        {
+            continue;
+        }
+
+        /* múltiplo p·q com q = 30t + r_k fica no byte p·t + ⌊p·r_k/30⌋ */
+        SievingPrime *entry = &sieving[sieving_count++];
+        entry->prime = (int32_t)p;
+
+        for (int k = 0; k < 8; k++)
+        {
+            int64_t product = p * SIEVE_RESIDUES[k];
+            entry->offsets[k] = (uint32_t)(product / 30);
+            entry->masks[k] = (uint8_t)~(1u << SIEVE_BIT_OF[product % 30]);
+        }
+
+        /* começa em p·p: q = p */
+        entry->cycle = p / 30;
+        entry->phase = SIEVE_BIT_OF[p % 30];
+    }
+
+    free(small_composite);
+
+    const uint8_t *pattern = sieve_pattern();
+    uint8_t *segment = malloc(SIEVE_SEGMENT_BYTES + 8);
+    int64_t last_byte = limit / 30;
+
+    for (int64_t low = 0; low <= last_byte; low += SIEVE_SEGMENT_BYTES)
+    {
+        int64_t size = last_byte - low + 1 < SIEVE_SEGMENT_BYTES ? last_byte - low + 1
+                                                                 : SIEVE_SEGMENT_BYTES;
+        int64_t phase = low % SIEVE_PATTERN_BYTES;
+
+        for (int64_t at = 0; at < size;)
+        {
+            int64_t run = SIEVE_PATTERN_BYTES - phase < size - at ? SIEVE_PATTERN_BYTES - phase
+                                                                  : size - at;
+            memcpy(segment + at, pattern + phase, (size_t)run);
+            at += run;
+            phase = 0;
+        }
+
+        if (low == 0)
+        {
+            /* 1 não é primo; 7, 11, 13 e 17 são, mesmo riscados no padrão */
+            segment[0] = (uint8_t)((segment[0] & ~1u) | 0x1E);
+        }
+
+        for (int64_t k = 0; k < sieving_count; k++)
+        {
+            sieve_cross_off(segment, low, size, &sieving[k]);
+        }
+
+        /* números acima de limit no último byte não contam */
+        if (low + size - 1 == last_byte)
+        {
+            int remainder = (int)(limit % 30);
+
+            for (int bit = 0; bit < 8; bit++)
+            {
+                if (SIEVE_RESIDUES[bit] > remainder)
+                {
+                    segment[size - 1] &= (uint8_t)~(1u << bit);
+                }
+            }
+        }
+
+        /* extrai 8 bytes por vez: bit j = byte j/8, resto j%8 */
+        memset(segment + size, 0, 8);
+
+        for (int64_t at = 0; at < size; at += 8)
+        {
+            uint64_t bits;
+            memcpy(&bits, segment + at, 8);
+            int64_t base = 30 * (low + at);
+
+            while (bits)
+            {
+                int j = __builtin_ctzll(bits);
+                primes[found++] = base + 30 * (j >> 3) + SIEVE_RESIDUES[j & 7];
+                bits &= bits - 1;
+            }
         }
     }
 
-    free(composite);
+    free(segment);
+    free(sieving);
     *count = found;
     return primes;
 }

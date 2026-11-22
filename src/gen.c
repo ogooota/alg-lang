@@ -42,8 +42,10 @@ TemplateUseList templates;
 /* algum vetor, heap, fila ou mapa guarda strings: entra o template ArrayStr */
 int strings_in_containers;
 
-const ElementKind STRING_ELEMENT = {"str",       "Str",      "ArrayU8", "ArrayU8", "str_read",
-                                    "str_write", "str_less", "",        "",        3};
+/* string em estrutura: guardada como Str (16 bytes), lida como ArrayU8 */
+const ElementKind STRING_ELEMENT = {"str",       "Str",         "Str",        "ArrayU8", "packed_read",
+                                    "str_write", "packed_less", "str_unpack", "",        3};
+
 /* vetores do #decl já garantidos no trecho que está sendo gerado */
 VariableSet ensured_lazy;
 /*
@@ -146,7 +148,7 @@ const char *load_macro(const ElementKind *kind)
         return "(stored)";
     }
 
-    return !strcmp(kind->loader, "(int64_t)") ? "((int64_t)(stored))" : "decode_int32_inf(stored)";
+    return format_string("%s(stored)", kind->loader);
 }
 
 /** Escreve o template de vetor para um tipo de elemento. */
@@ -190,26 +192,42 @@ void emit_template(TextBuffer *out, const TemplateUse *template_use)
     }
     else if (template_use->kind == TEMPLATE_MAP)
     {
-        const char *hash_macro = element_kind->kind >= 2
+        int is_text_key = element_kind == &STRING_ELEMENT;
+        const char *hash_macro = is_text_key ? "text_hash(key)"
+                                 : element_kind->kind == 2
                                      ? format_string("%s_hash(key)", element_kind->suffix)
                                  : element_kind->kind == 1 ? "hash_real(key)"
                                                            : "hash_int(key)";
-        const char *equal_macro = element_kind->kind >= 2
+        const char *equal_macro = is_text_key ? "packed_equal_text(left, right)"
+                                  : element_kind->kind == 2
                                       ? format_string("%s_equal(left, right)", element_kind->suffix)
                                       : "((left) == (right))";
 
-        text_appendf(out, "#define KEY_STORE(key) %s\n",
-                     element_kind == &STRING_ELEMENT ? "array_u8_copy(key)" : "(key)");
+        /* chave string: busca com o texto (ArrayU8), guarda a forma compacta (Str) */
+        text_appendf(out, "#define KEY_STORE(key) %s\n#define KEY_INPUT %s\n",
+                     is_text_key ? "str_pack(key)" : "(key)", element_kind->value_type);
+        text_appendf(out, "#define HASH_STORED(key) %s\n",
+                     is_text_key ? "packed_hash(key)" : hash_macro);
         text_appendf(out, "#define KEY %s\n#define MAP_VALUE %s\n#define MAP %s\n",
                      element_kind->c_type, template_use->value->c_type, template_use->type_name);
         text_appendf(out, "#define HASH(key) %s\n#define KEYS_EQUAL(left, right) %s\n", hash_macro,
                      equal_macro);
-        text_appendf(out, "#define KEY_ARRAY Array%s\n#define KEY_ARRAY_FN(name) array_%s##name\n",
-                     element_kind->pascal, element_kind->suffix);
+        /* prefixo de ordem para o radix do for: inteiro com o sinal invertido, ou 8 bytes do texto */
+        text_appendf(out, "#define KEY_LESS(left, right) %s(left, right)\n", element_kind->less_than);
+
+        if (is_text_key)
+        {
+            text_append(out, "#define ORDER_PREFIX(key) str_prefix(str_unpack(key))\n");
+        }
+        else if (element_kind->kind == 0)
+        {
+            text_append(out, "#define ORDER_PREFIX(key) ((uint64_t)(int64_t)(key) ^ (1ULL << 63))\n");
+        }
         emit_text(out, rt_map_h, rt_map_h_len);
         text_append(out,
                     "#undef KEY\n#undef MAP_VALUE\n#undef MAP\n#undef HASH\n#undef KEYS_EQUAL\n"
-                    "#undef KEY_ARRAY\n#undef KEY_ARRAY_FN\n#undef KEY_STORE\n");
+                    "#undef KEY_LESS\n#undef ORDER_PREFIX\n#undef KEY_STORE\n#undef KEY_INPUT\n"
+                    "#undef HASH_STORED\n");
     }
     else if (template_use->kind == TEMPLATE_FENWICK)
     {

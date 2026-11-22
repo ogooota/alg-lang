@@ -92,7 +92,7 @@ Type *check_reduce(Expression *expr, Builtin builtin)
             FAIL_AT_NODE(argument, "%s funciona com vetor 1D (ou use 'para' dentro)", c_name);
         }
 
-        return resolve_unknown(type->element);
+        return value_of_cell(resolve_unknown(type->element));
     }
 
     if (builtin == BUILTIN_SOMA)

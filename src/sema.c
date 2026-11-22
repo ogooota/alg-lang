@@ -243,6 +243,19 @@ void check_assignment(Statement *stmt)
     }
 
     Type *type = check_expression(target);
+    Type *container = target->kind == EXPR_INDEX ? target->first->type : NULL;
+
+    /* string numa posição de estrutura: a célula vira TYPE_STRING (guardada por cópia) */
+    if (container && is_string(resolve_unknown(value_type)) &&
+        (container->kind == TYPE_MAP ||
+         (container->kind == TYPE_ARRAY && container->dimension_count == 1)))
+    {
+        Type *cell = container->kind == TYPE_MAP ? container->value : container->element;
+
+        store_in_cell(cell, value_type, stmt->second);
+        target->type = value_of_cell(cell);
+        return;
+    }
 
     if (type->kind == TYPE_ARRAY && !holds_strings(target))
     {

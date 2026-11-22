@@ -120,7 +120,7 @@ static inline int str_equal(ArrayU8 left, ArrayU8 right)
 }
 
 /** Hash do texto (FNV-1a) misturado com a semente da execução. */
-static inline uint64_t str_hash(ArrayU8 text)
+static inline uint64_t text_hash(ArrayU8 text)
 {
     uint64_t hash = 1469598103934665603ULL;
 
@@ -178,13 +178,93 @@ static ArrayU8 str_from_real(double number)
     return str_from(digits, length);
 }
 
-/* chave de ordenação: 8 primeiros bytes em big-endian (zero depois do fim) e o índice */
+/* ---------- string guardada (em vetor, heap, fila, mapa) ----------
+ * 16 bytes, como as strings do Umbra (Neumann e Freitag, CIDR 2020): tamanho, 4 primeiros
+ * bytes e ponteiro. Comparar tamanho + prefixo é um load só e quase sempre decide sem seguir o ponteiro. */
 typedef struct
 {
-    uint64_t prefix;
-    uint64_t index;
-} StringKey;
+    uint32_t length;
+    uint8_t prefix[4];
+    uint8_t *data;
+} Str;
 
+/** Guarda a string usando os dados dela (sem copiar): só para strings recém-criadas. */
+static inline Str str_adopt(ArrayU8 text)
+{
+    Str packed = {(uint32_t)text.length, {0}, text.data};
+    memcpy(packed.prefix, text.data, text.length < 4 ? (size_t)text.length : 4);
+    return packed;
+}
+
+/** Guarda uma cópia da string: mudar a original depois não muda a guardada. */
+static inline Str str_pack(ArrayU8 text)
+{
+    return str_adopt(array_u8_copy(text));
+}
+
+/** A string guardada como valor; o primeiro add realoca, então quem leu pode crescer a sua cópia. */
+static inline ArrayU8 str_unpack(Str packed)
+{
+    ArrayU8 text = {0};
+    text.data = packed.data;
+    text.length = packed.length;
+    text.capacity = packed.length;
+    text.stride = 1;
+    text.dimension_count = 1;
+    return text;
+}
+
+static inline uint64_t str_head(Str packed)
+{
+    uint64_t head;
+    memcpy(&head, &packed, sizeof head);
+    return head;
+}
+
+static inline int packed_equal(Str left, Str right)
+{
+    return str_head(left) == str_head(right) &&
+           (left.length <= 4 || memcmp(left.data + 4, right.data + 4, left.length - 4) == 0);
+}
+
+/** Guardada == procurada: tamanho e prefixo primeiro, sem tocar nos dados guardados. */
+static inline int packed_equal_text(Str stored, ArrayU8 text)
+{
+    if (stored.length != (uint64_t)text.length)
+    {
+        return 0;
+    }
+
+    size_t head = stored.length < 4 ? stored.length : 4;
+    return memcmp(stored.prefix, text.data, head) == 0 &&
+           (stored.length <= 4 || memcmp(stored.data + 4, text.data + 4, stored.length - 4) == 0);
+}
+
+/** Ordem de dicionário: o prefixo (com zeros depois do fim) decide quando difere. */
+static inline int packed_less(Str left, Str right)
+{
+    int order = memcmp(left.prefix, right.prefix, 4);
+
+    if (order)
+    {
+        return order < 0;
+    }
+
+    return str_less(str_unpack(left), str_unpack(right));
+}
+
+static inline uint64_t packed_hash(Str packed)
+{
+    return text_hash(str_unpack(packed));
+}
+
+/** Lê uma palavra direto para uma posição de estrutura (a palavra lida já é nova: sem cópia). */
+static Str packed_read(int line)
+{
+    return str_adopt(str_read(line));
+}
+
+/* 8 primeiros bytes em big-endian, com zero depois do fim: a ordem do prefixo é a do texto */
 static inline uint64_t str_prefix(ArrayU8 text)
 {
     uint64_t prefix = 0;
@@ -198,85 +278,29 @@ static inline uint64_t str_prefix(ArrayU8 text)
     return prefix;
 }
 
-/** Ordena em ordem de dicionário: radix nos prefixos de 8 bytes, desempate só nos blocos iguais. */
-static void str_sort(ArrayU8 *texts, int64_t count)
+static int str_index_less(uint64_t left, uint64_t right, const void *context)
+{
+    const Str *texts = context;
+    return packed_less(texts[left], texts[right]);
+}
+
+/** Ordem de dicionário: radix nos prefixos de 8 bytes, desempate só nos blocos iguais, permutação no lugar. */
+static void str_sort(Str *texts, int64_t count)
 {
     if (count < 2)
     {
         return;
     }
 
-    StringKey *keys = malloc((size_t)count * sizeof *keys);
-    StringKey *buffer = malloc((size_t)count * sizeof *keys);
-    uint64_t all_or = 0;
-    uint64_t all_and = ~0ULL;
+    OrderKey *keys = malloc((size_t)count * sizeof *keys);
 
     for (int64_t i = 0; i < count; i++)
     {
-        keys[i].prefix = str_prefix(texts[i]);
+        keys[i].prefix = str_prefix(str_unpack(texts[i]));
         keys[i].index = (uint64_t)i;
-        all_or |= keys[i].prefix;
-        all_and &= keys[i].prefix;
     }
 
-    /* LSD radix de 8 bits; pula o byte que é igual em todas as chaves */
-    for (int shift = 0; shift < 64; shift += 8)
-    {
-        if ((((all_or ^ all_and) >> shift) & 0xFF) == 0)
-        {
-            continue;
-        }
-
-        int64_t start[256] = {0};
-
-        for (int64_t i = 0; i < count; i++)
-        {
-            start[(keys[i].prefix >> shift) & 0xFF]++;
-        }
-
-        for (int64_t digit = 0, total = 0; digit < 256; digit++)
-        {
-            int64_t size = start[digit];
-            start[digit] = total;
-            total += size;
-        }
-
-        for (int64_t i = 0; i < count; i++)
-        {
-            buffer[start[(keys[i].prefix >> shift) & 0xFF]++] = keys[i];
-        }
-
-        StringKey *swap = keys;
-        keys = buffer;
-        buffer = swap;
-    }
-
-    /* blocos com o mesmo prefixo: ordem completa por inserção (blocos costumam ser pequenos) */
-    for (int64_t low = 0; low < count;)
-    {
-        int64_t high = low + 1;
-
-        while (high < count && keys[high].prefix == keys[low].prefix)
-        {
-            high++;
-        }
-
-        for (int64_t i = low + 1; i < high; i++)
-        {
-            StringKey moving = keys[i];
-            int64_t j = i;
-
-            while (j > low && str_less(texts[moving.index], texts[keys[j - 1].index]))
-            {
-                keys[j] = keys[j - 1];
-                j--;
-            }
-
-            keys[j] = moving;
-        }
-
-        low = high;
-    }
+    order_sort(keys, count, str_index_less, texts);
 
     /* permuta no lugar seguindo os ciclos: a posição i recebe texts[keys[i].index] */
     for (int64_t i = 0; i < count; i++)
@@ -286,7 +310,7 @@ static void str_sort(ArrayU8 *texts, int64_t count)
             continue;
         }
 
-        ArrayU8 first = texts[i];
+        Str first = texts[i];
         int64_t position = i;
 
         while (keys[position].index != (uint64_t)i)
@@ -302,5 +326,4 @@ static void str_sort(ArrayU8 *texts, int64_t count)
     }
 
     free(keys);
-    free(buffer);
 }

@@ -72,6 +72,8 @@ extern int element_used[ELEMENT_KIND_COUNT];
 extern ElementKindList tuples;
 extern TemplateUseList templates;
 extern int strings_in_containers;
+extern Expression *cached_map_index;
+extern int cached_map_pointer;
 extern const ElementKind STRING_ELEMENT;
 extern VariableSet ensured_lazy;
 extern const char *PRAGMAS;

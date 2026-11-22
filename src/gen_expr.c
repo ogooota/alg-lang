@@ -613,6 +613,10 @@ void gen_call(TextBuffer *out, Expression *expr)
     text_append(out, ")");
 }
 
+/* m[k] op= x: a leitura de m[k] usa o ponteiro já buscado (_p<id>) em vez de buscar de novo */
+Expression *cached_map_index;
+int cached_map_pointer;
+
 /* posição de vetor como lugar onde se escreve (sem a conversão de leitura) */
 void gen_lvalue(TextBuffer *out, Expression *expr)
 {
@@ -645,7 +649,7 @@ void gen_stored_value(TextBuffer *out, Type *cell, Expression *value)
     /* string guardada em estrutura é copiada: mudar a original depois não muda a guardada */
     if (is_text_type(value->type) && (cell_root(cell)->kind == TYPE_STRING || is_text_type(cell)))
     {
-        text_append(out, "array_u8_copy(");
+        text_append(out, "str_pack(");
         gen_expression(out, value);
         text_append(out, ")");
         return;
@@ -769,6 +773,12 @@ void gen_method_call(TextBuffer *out, Expression *expr)
         break;
     }
 
+    /* heap/fila de strings guarda Str: o que sai volta a ser string */
+    int unpack = (method == METHOD_REMOVER || method == METHOD_DESENFILEIRAR ||
+                  method == METHOD_TOPO || method == METHOD_FRENTE) &&
+                 type->kind != TYPE_MAP && is_text_type(expr->type);
+
+    text_append(out, unpack ? "str_unpack(" : "");
     text_appendf(out, "%s_%s(", c_name, function_suffix);
     gen_expression(out, expr->first);
 
@@ -778,7 +788,7 @@ void gen_method_call(TextBuffer *out, Expression *expr)
         int copy = is_text_type(argument->type) &&
                    (method == METHOD_INSERIR || method == METHOD_ENFILEIRAR);
 
-        text_append(out, copy ? ", array_u8_copy(" : ", ");
+        text_append(out, copy ? ", str_pack(" : ", ");
         gen_expression(out, argument);
         text_append(out, copy ? ")" : "");
     }
@@ -795,7 +805,7 @@ void gen_method_call(TextBuffer *out, Expression *expr)
         text_appendf(out, ", %d", expr->line);
     }
 
-    text_append(out, ")");
+    text_append(out, unpack ? "))" : ")");
 }
 
 /** Escreve um número real como literal C. */
@@ -852,13 +862,19 @@ void gen_expression(TextBuffer *out, Expression *expr)
         return;
 
     case EXPR_INDEX:
-        if (expr->first->type->kind == TYPE_MAP)
+        if (expr == cached_map_index)
         {
-            text_appendf(out, "%s_get(", template_name(expr->first->type));
+            text_appendf(out, "(*_p%d)", cached_map_pointer);
+        }
+        else if (expr->first->type->kind == TYPE_MAP)
+        {
+            int unpack = is_text_type(expr->type);
+
+            text_appendf(out, "%s%s_get(", unpack ? "str_unpack(" : "", template_name(expr->first->type));
             gen_expression(out, expr->first);
             text_append(out, ", ");
             gen_expression(out, expr->second);
-            text_append(out, ")");
+            text_append(out, unpack ? "))" : ")");
         }
         else if (expr->first->type->dimension_count == 1)
         {
@@ -947,7 +963,8 @@ void gen_read(TextBuffer *out, Expression *argument, int depth)
         (argument->kind == EXPR_NAME || argument->kind == EXPR_INDEX))
     {
         gen_lvalue(out, argument);
-        text_appendf(out, " = str_read(%d);\n", argument->line);
+        text_appendf(out, " = %s(%d);\n", argument->kind == EXPR_INDEX ? "packed_read" : "str_read",
+                     argument->line);
         return;
     }
 

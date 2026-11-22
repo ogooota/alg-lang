@@ -126,25 +126,33 @@ void gen_for_in(TextBuffer *out, Statement *stmt, int depth)
         gen_expression(out, stmt->first);
         text_append(out, ";\n");
         indent(out, depth + 1);
-        text_appendf(out, "Array%s _a%d = %s_keys(_m%d);\n",
-                     cell_element_kind(iterable_type->element)->pascal, temp_id, c_name, temp_id);
+        text_appendf(out, "%s_Entries _a%d = %s_entries(_m%d);\n", c_name, temp_id, c_name,
+                     temp_id);
         indent(out, depth + 1);
         text_appendf(out, "for (int64_t _k%d = 0; _k%d < _a%d.length; _k%d++)\n", temp_id, temp_id,
                      temp_id, temp_id);
         indent(out, depth + 1);
         text_append(out, "{\n");
 
+        const char *loader = cell_element_kind(iterable_type->element)->loader;
+        const char *value_loader =
+            cell_root(iterable_type->value)->kind == TYPE_STRING ? "str_unpack" : "";
+
         if (stmt->pattern_variables)
         {
+            /* o valor sai da foto enquanto o corpo não escreve no mapa; depois, busca de novo */
             gen_assign_line(out, stmt->pattern_variables[0], stmt->line, body_indent,
-                            "_a%d.data[_k%d]", temp_id, temp_id);
+                            "%s(_a%d.data[_k%d].key)", loader, temp_id, temp_id);
             gen_assign_line(out, stmt->pattern_variables[1], stmt->line, body_indent,
-                            "%s_get(_m%d, _a%d.data[_k%d])", c_name, temp_id, temp_id, temp_id);
+                            "%s(_a%d.writes == _m%d->writes ? _a%d.data[_k%d].value : "
+                            "%s_get(_m%d, %s(_a%d.data[_k%d].key)))",
+                            value_loader, temp_id, temp_id, temp_id, temp_id, c_name, temp_id, loader,
+                            temp_id, temp_id);
         }
         else
         {
-            gen_assign_line(out, stmt->variable, stmt->line, body_indent, "_a%d.data[_k%d]",
-                            temp_id, temp_id);
+            gen_assign_line(out, stmt->variable, stmt->line, body_indent,
+                            "%s(_a%d.data[_k%d].key)", loader, temp_id, temp_id);
         }
     }
     else
@@ -345,6 +353,24 @@ void gen_statement(TextBuffer *out, Statement *stmt, int depth)
             emit_identifier(out, "v_", stmt->first->variable->name);
             text_append(out, " = ");
             gen_expression(out, stmt->second);
+        }
+        else if (stmt->first->kind == EXPR_INDEX && stmt->first->first->type->kind == TYPE_MAP &&
+                 stmt->second->kind == EXPR_BINARY && stmt->second->first == stmt->first)
+        {
+            /* m[k] += x: uma busca só (o ponteiro do valor serve para ler e escrever) */
+            int temp_id = temp_counter++;
+            Type *map_type = stmt->first->first->type;
+
+            text_appendf(out, "{ %s *_p%d = &", structure_template(map_type)->value->c_type, temp_id);
+            gen_lvalue(out, stmt->first);
+            text_appendf(out, "; ");
+            cached_map_index = stmt->first;
+            cached_map_pointer = temp_id;
+            text_appendf(out, "*_p%d = ", temp_id);
+            gen_stored_value(out, stmt->first->type, stmt->second);
+            cached_map_index = NULL;
+            text_append(out, "; }\n");
+            return;
         }
         else if (stmt->first->kind == EXPR_INDEX)
         {
