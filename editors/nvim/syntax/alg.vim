@@ -30,13 +30,14 @@ syntax match algFloat "\<\d\+\.\d\+\>"
 syntax keyword algType int real int32
 
 " nomes nativos
-syntax keyword algBuiltin ler escrever tam copia soma min max ordenar heap fila grafo mapa conj
-syntax keyword algBuiltin read write len copy sum sort queue graph map set
+syntax keyword algBuiltin ler escrever tam copia soma min max ordenar heap fila grafo mapa conj prefixo busca mdc mmc potmod crivo conjuntos fenwick segtree rmq
+syntax keyword algBuiltin read write len copy sum sort queue graph map set prefix search gcd lcm powmod sieve dsu
 syntax keyword algWord maior dirigido greater directed
 
 " métodos das estruturas (depois do ponto)
 syntax match algMethod "\.\zs\(adicionar\|remover_ultimo\|inserir\|remover\|topo\|enfileirar\|desenfileirar\|frente\|aresta\|vizinhos\)\>"
 syntax match algMethod "\.\zs\(add\|pop\|push\|top\|front\|edge\|neighbors\|remove\)\>"
+syntax match algMethod "\.\zs\(unir\|achar\|juntos\|grupos\|somar\|consulta\|mudar\|merge\|find\|same\|groups\|size\|query\|set\|sum\|soma\|tam\)\>"
 
 " reservadas para os próximos marcos
 syntax keyword algReserved todo existe algum uniao inter menos tipo all exists some union minus type

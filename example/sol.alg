@@ -1,14 +1,11 @@
-#lang en
+#lang en 
 #decl {
-    w[n];
-    v[n];
+    pre[n+1];
 }
 
-// o problema da mochila 
-read(n, cap)
+read(n, l, r, a[0..n])
+for i=0 to n {
+    pre[i+1]=pre[i]+a[i]
+}
 
-for i=0 to n:
-
-
-
-
+write(pre[r]-pre[l-1])

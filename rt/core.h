@@ -436,6 +436,185 @@ static void *grow_memory(void *block, size_t bytes)
     return block;
 }
 
+/* ---------- matemática de maratona ---------- */
+
+/** Máximo divisor comum (sempre >= 0). */
+static int64_t gcd_int(int64_t left, int64_t right)
+{
+    uint64_t a = left < 0 ? 0 - (uint64_t)left : (uint64_t)left;
+    uint64_t b = right < 0 ? 0 - (uint64_t)right : (uint64_t)right;
+
+    while (b)
+    {
+        uint64_t rest = a % b;
+        a = b;
+        b = rest;
+    }
+
+    return (int64_t)a;
+}
+
+/** Mínimo múltiplo comum (0 se um dos dois é 0). */
+static int64_t lcm_int(int64_t left, int64_t right)
+{
+    if (left == 0 || right == 0)
+    {
+        return 0;
+    }
+
+    int64_t divisor = gcd_int(left, right);
+    int64_t value = left / divisor * right;
+    return value < 0 ? -value : value;
+}
+
+/** base^exponent mod modulus por exponenciação rápida; resultado em [0, modulus). */
+static int64_t powmod_int(int64_t base, int64_t exponent, int64_t modulus, int line)
+{
+    if (modulus <= 0)
+    {
+        runtime_error(line, "potmod com módulo %lld (precisa ser positivo)", (long long)modulus);
+    }
+
+    if (exponent < 0)
+    {
+        runtime_error(line, "potmod com expoente negativo (%lld)", (long long)exponent);
+    }
+
+    unsigned __int128 result = 1 % (uint64_t)modulus;
+    unsigned __int128 power = (uint64_t)euclid_mod(base, modulus, line);
+
+    while (exponent > 0)
+    {
+        if (exponent & 1)
+        {
+            result = result * power % (uint64_t)modulus;
+        }
+
+        power = power * power % (uint64_t)modulus;
+        exponent >>= 1;
+    }
+
+    return (int64_t)result;
+}
+
+/** Primos até limit (crivo de Eratóstenes); devolve o vetor e a quantidade em count. */
+static int64_t *sieve_primes(int64_t limit, int64_t *count, int line)
+{
+    if (limit < 0)
+    {
+        runtime_error(line, "crivo(%lld): o limite precisa ser >= 0", (long long)limit);
+    }
+
+    uint8_t *composite = calloc((size_t)limit + 2, 1);
+    int64_t *primes = grow_memory(NULL, (size_t)(limit / 2 + 2) * sizeof(int64_t));
+    int64_t found = 0;
+
+    for (int64_t i = 2; i <= limit; i++)
+    {
+        if (composite[i])
+        {
+            continue;
+        }
+
+        primes[found] = i;
+        found++;
+
+        for (int64_t multiple = i * i; multiple <= limit; multiple += i)
+        {
+            composite[multiple] = 1;
+        }
+    }
+
+    free(composite);
+    *count = found;
+    return primes;
+}
+
+/* ---------- union-find (conjuntos) ---------- */
+
+typedef struct
+{
+    int32_t *parent; /* parent[x] == x: x é o representante do grupo */
+    int32_t *size;   /* tamanho do grupo (válido no representante) */
+    int64_t count;   /* número de elementos */
+    int64_t groups;  /* número de grupos */
+} DisjointSets;
+
+/** n elementos, cada um no seu próprio grupo. */
+static DisjointSets *dsu_new(int64_t count, int line)
+{
+    if (count < 0 || count > INT32_MAX)
+    {
+        runtime_error(line, "conjuntos(%lld): tamanho inválido", (long long)count);
+    }
+
+    DisjointSets *sets = arena_allocate(sizeof(DisjointSets));
+    sets->parent = arena_allocate((size_t)count * sizeof(int32_t));
+    sets->size = arena_allocate((size_t)count * sizeof(int32_t));
+    sets->count = count;
+    sets->groups = count;
+
+    for (int64_t i = 0; i < count; i++)
+    {
+        sets->parent[i] = (int32_t)i;
+        sets->size[i] = 1;
+    }
+
+    return sets;
+}
+
+/** Representante do grupo de x (path halving: o caminho encurta a cada busca). */
+static int64_t dsu_find(DisjointSets *sets, int64_t element, int line)
+{
+    check_index(element, sets->count, line);
+
+    int32_t x = (int32_t)element;
+
+    while (sets->parent[x] != x)
+    {
+        sets->parent[x] = sets->parent[sets->parent[x]];
+        x = sets->parent[x];
+    }
+
+    return x;
+}
+
+/** Junta os grupos de a e b (o menor entra no maior); 1 se eram grupos diferentes. */
+static int64_t dsu_merge(DisjointSets *sets, int64_t a, int64_t b, int line)
+{
+    int32_t root_a = (int32_t)dsu_find(sets, a, line);
+    int32_t root_b = (int32_t)dsu_find(sets, b, line);
+
+    if (root_a == root_b)
+    {
+        return 0;
+    }
+
+    if (sets->size[root_a] < sets->size[root_b])
+    {
+        int32_t swap = root_a;
+        root_a = root_b;
+        root_b = swap;
+    }
+
+    sets->parent[root_b] = root_a;
+    sets->size[root_a] += sets->size[root_b];
+    sets->groups--;
+    return 1;
+}
+
+/** 1 se a e b estão no mesmo grupo. */
+static int64_t dsu_same(DisjointSets *sets, int64_t a, int64_t b, int line)
+{
+    return dsu_find(sets, a, line) == dsu_find(sets, b, line);
+}
+
+/** Tamanho do grupo de x. */
+static int64_t dsu_group_size(DisjointSets *sets, int64_t element, int line)
+{
+    return sets->size[dsu_find(sets, element, line)];
+}
+
 /* ---------- início: roda o programa numa thread com pilha de 256 MB ---------- */
 
 static void *program_thread(void *unused)

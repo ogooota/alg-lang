@@ -21,7 +21,7 @@ make test                     # roda tests/cases/*.alg
 | Tema | Decisão | Status |
 |---|---|---|
 | Idioma | `#lang pt` ou `#lang en` obrigatório na 1ª linha; um idioma por arquivo | ✅ |
-| Blocos | chaves `{ }`, com a chave aberta na mesma linha (`se x {`) ou na seguinte; indentação livre; `se x { y = 1 }` em uma linha também vale | ✅ |
+| Blocos | chaves `{ }`, com a chave aberta na mesma linha (`se x {`) ou na seguinte; indentação livre; `se x { y = 1 }` em uma linha também vale. Como em C, corpo de um comando só dispensa as chaves (`para i=0 ate n` ⏎ `se i > 5` ⏎ `escrever(i)`), e o `senao` fica com o `se` mais próximo | ✅ |
 | Comentário | `//` | ✅ |
 | `;` | opcional no fim de qualquer comando (`x = 3;`), para quem está acostumado com C | ✅ |
 | Função | `fn nome(a, b):` com bloco, ou `f(x) = expr` em uma linha; `ret` devolve (iguais em pt e en) | ✅ |
@@ -62,7 +62,8 @@ make test                     # roda tests/cases/*.alg
 | Pilha | o próprio vetor: `adicionar`, `remover_ultimo` | ✅ |
 | Grafo | `grafo(n)`, `grafo(n, dirigido)`; `g.aresta(u, v[, peso])`; `para v em g.vizinhos(u)`, `para (v, w) em g.vizinhos(u)` | ✅ |
 | Registros | `tipo Aresta: u; v; peso` | ⏳ |
-| Adiado | `rep(ação, parada)`, passo/decrescente no `para`, tradutor pt↔en | — |
+| Técnicas nativas | `prefixo`, `busca`, `mdc`, `mmc`, `potmod`, `crivo`, `conjuntos`, `fenwick`, `segtree`, `rmq` (seção abaixo) | ✅ |
+| Adiado | `rep(ação, parada)`, passo/decrescente no `para`, tradutor pt↔en, compressão de coordenadas | — |
 
 ## O que já dá para escrever (marco 1)
 
@@ -118,6 +119,59 @@ fn fib(k) {
 }
 
 escrever(a, "texto", v, grid)
+```
+
+## Técnicas nativas
+
+Técnicas que aparecem em quase toda maratona viram parte da linguagem: menos código para escrever e nenhuma chance de errar a implementação clássica. Intervalos seguem a regra da linguagem: `[l, r)`, sem incluir `r`.
+
+### Funções
+
+| pt | en | O que faz | Custo |
+|---|---|---|---|
+| `prefixo(v)` | `prefix(v)` | vetor `P` de tamanho `n + 1` com `P[i] = v[0] + ... + v[i-1]`; soma de `v[l..r)` é `P[r] - P[l]`. Em matriz `n × m`, devolve o prefixo 2D `(n+1) × (m+1)` | O(n) |
+| `busca(v, x)` | `search(v, x)` | em vetor ordenado, primeira posição com `v[i] >= x` (`tam(v)` se não houver) | O(log n) |
+| `busca(v, x, maior)` | `search(v, x, greater)` | primeira posição com `v[i] > x` | O(log n) |
+| `mdc(a, b)` | `gcd(a, b)` | máximo divisor comum (sempre ≥ 0) | O(log) |
+| `mmc(a, b)` | `lcm(a, b)` | mínimo múltiplo comum | O(log) |
+| `potmod(b, e, m)` | `powmod(b, e, m)` | `b^e mod m` por exponenciação rápida (resultado em `[0, m)`) | O(log e) |
+| `crivo(n)` | `sieve(n)` | vetor com os primos `≤ n`, em ordem | O(n log log n) |
+
+### Estruturas
+
+| pt | en | Operações | Custo |
+|---|---|---|---|
+| `d = conjuntos(n)` | `d = dsu(n)` | `d.unir(a, b)` (devolve 1 se juntou dois grupos), `d.achar(a)`, `d.juntos(a, b)`, `d.tam(a)` (tamanho do grupo de `a`), `d.grupos()` | ≈O(1) (union by size + path halving) |
+| `f = fenwick(n)` | `f = fenwick(n)` | `f.somar(i, x)` (soma `x` na posição `i`), `f.soma(l, r)` (soma de `[l, r)`) | O(log n) |
+| `s = segtree(v, min)` | `s = segtree(v, min)` | também `max` e `soma`/`sum`; `s.consulta(l, r)` (resultado em `[l, r)`), `s.mudar(i, x)` (troca o valor da posição `i`) | O(log n) |
+| `r = rmq(v, min)` | `r = rmq(v, min)` | também `max`; `r.consulta(l, r)`; vetor que não muda (sparse table) | O(1) consulta, O(n log n) construção |
+
+Detalhes:
+- Os nomes são nativos: um programa não pode ter função própria chamada `busca`, `prefixo` etc.
+- `tam(x)` funciona em todas: número de elementos (`n`).
+- Fenwick e segtree guardam inteiros de 64 bits ou reais, conforme os valores usados.
+- `consulta(l, r)` com intervalo vazio (`l >= r`) é erro com a linha (sem `-O`).
+- Os vetores devolvidos por `prefixo` e `crivo` são sempre de 64 bits: a análise de faixa não os estreita.
+
+Exemplo (Kruskal):
+
+```
+#lang pt
+ler(n, m)
+arestas = {}
+para i=0 ate m {
+    ler(u, v, w)
+    arestas.adicionar((w, u, v))
+}
+ordenar(arestas)
+d = conjuntos(n)
+total = 0
+para (w, u, v) em arestas {
+    se d.unir(u, v) {
+        total += w
+    }
+}
+escrever(total)
 ```
 
 ## Palavras e nomes nativos: pt ↔ en

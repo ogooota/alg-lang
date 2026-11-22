@@ -123,6 +123,18 @@ static const char *type_name(Type *type)
 
     case TYPE_MAP:
         return "mapa";
+
+    case TYPE_DSU:
+        return "conjuntos";
+
+    case TYPE_FENWICK:
+        return "fenwick";
+
+    case TYPE_SEGTREE:
+        return "segtree";
+
+    case TYPE_RMQ:
+        return "rmq";
     }
 
     return "?";
@@ -219,6 +231,7 @@ static void unify_elements(Type *target, Type *source, Expression *location)
     {
         target_root->link = source_root;
         source_root->is_int32 |= target_root->is_int32;
+        source_root->is_structure_cell |= target_root->is_structure_cell;
     }
 }
 
@@ -277,6 +290,18 @@ static void unify_types(Type *target, Type *source, Expression *location)
     if (target->kind == TYPE_GRAPH && target->directed != source->directed)
     {
         FAIL_AT_NODE(location, "grafo dirigido e não dirigido são tipos diferentes");
+    }
+
+    if ((target->kind == TYPE_SEGTREE || target->kind == TYPE_RMQ) &&
+        target->combine != source->combine)
+    {
+        FAIL_AT_NODE(location,
+                     "estruturas com operações diferentes (min, max, soma) são tipos diferentes");
+    }
+
+    if (target->kind == TYPE_FENWICK || target->kind == TYPE_SEGTREE || target->kind == TYPE_RMQ)
+    {
+        unify_elements(target->element, source->element, location);
     }
 
     if (target->kind == TYPE_HEAP || target->kind == TYPE_QUEUE || target->kind == TYPE_MAP ||
@@ -658,6 +683,14 @@ static int same_signature(Type *left_type, Type *right_type)
         return left_type->directed == right_type->directed &&
                cells_compatible(left_type->element, right_type->element);
 
+    case TYPE_FENWICK:
+        return cells_compatible(left_type->element, right_type->element);
+
+    case TYPE_SEGTREE:
+    case TYPE_RMQ:
+        return left_type->combine == right_type->combine &&
+               cells_compatible(left_type->element, right_type->element);
+
     default:
         return 1;
     }
@@ -809,9 +842,8 @@ static Type *check_user_call(Expression *expr, Function *function)
 
     for (int i = 0; i < expr->arguments.count; i++)
     {
-        if (argument_types[i]->kind == TYPE_ARRAY || argument_types[i]->kind == TYPE_HEAP ||
-            argument_types[i]->kind == TYPE_QUEUE || argument_types[i]->kind == TYPE_MAP ||
-            argument_types[i]->kind == TYPE_GRAPH)
+        if (argument_types[i]->kind >= TYPE_ARRAY && argument_types[i]->kind != TYPE_TUPLE &&
+            argument_types[i]->kind != TYPE_DSU)
         {
             unify_types(instance->parameter_types[i], argument_types[i], expr->arguments.items[i]);
         }
@@ -923,6 +955,44 @@ static Type *taken_value(Type *cell)
 }
 
 /** Checa um método de vetor, heap, fila, mapa ou grafo e devolve o tipo do resultado. */
+/** segtree(v, min|max|soma) e rmq(v, min|max): estrutura de consulta de intervalo sobre v. */
+static Type *check_range_structure(Expression *expr, Builtin builtin)
+{
+    check_argument_count(expr, 2, 2);
+    Type *source = check_array(expr->arguments.items[0]);
+    Expression *operation = expr->arguments.items[1];
+    int is_rmq = builtin == BUILTIN_RMQ;
+
+    if (source->dimension_count != 1 || !is_number(resolve_unknown(source->element)))
+    {
+        FAIL_AT_NODE(expr->arguments.items[0], "'%s' recebe um vetor 1D de números", expr->text);
+    }
+
+    Type *type = new_type(is_rmq ? TYPE_RMQ : TYPE_SEGTREE);
+    type->element = new_structure_cell();
+    type->element->kind = source->element->kind;
+
+    if (is_word(operation, BUILTIN_MIN))
+    {
+        type->combine = COMBINE_MIN;
+    }
+    else if (is_word(operation, BUILTIN_MAX))
+    {
+        type->combine = COMBINE_MAX;
+    }
+    else if (!is_rmq && is_word(operation, BUILTIN_SOMA))
+    {
+        type->combine = COMBINE_SUM;
+    }
+    else
+    {
+        FAIL_AT_NODE(operation, is_rmq ? "rmq combina com min ou max"
+                                       : "segtree combina com min, max ou soma");
+    }
+
+    return type;
+}
+
 static Type *check_method(Expression *expr)
 {
     Type *type = check_expression(expr->first);
@@ -983,6 +1053,38 @@ static Type *check_method(Expression *expr)
         }
 
         return &VOID_TYPE;
+
+    case METHOD_UNIR:
+    case METHOD_JUNTOS:
+        check_argument_count(expr, 2, 2);
+        check_int(expr->arguments.items[0]);
+        check_int(expr->arguments.items[1]);
+        return &INT_TYPE;
+
+    case METHOD_ACHAR:
+    case METHOD_TAM_GRUPO:
+        check_argument_count(expr, 1, 1);
+        check_int(expr->arguments.items[0]);
+        return &INT_TYPE;
+
+    case METHOD_GRUPOS:
+        check_argument_count(expr, 0, 0);
+        return &INT_TYPE;
+
+    case METHOD_SOMAR:
+    case METHOD_MUDAR:
+        check_argument_count(expr, 2, 2);
+        check_int(expr->arguments.items[0]);
+        store_in_cell(type->element, check_number(expr->arguments.items[1]),
+                      expr->arguments.items[1]);
+        return &VOID_TYPE;
+
+    case METHOD_SOMA:
+    case METHOD_CONSULTA:
+        check_argument_count(expr, 2, 2);
+        check_int(expr->arguments.items[0]);
+        check_int(expr->arguments.items[1]);
+        return taken_value(type->element);
 
     case METHOD_VIZINHOS:
         FAIL_AT_NODE(expr, "vizinhos() se usa num laço: 'para v em g.vizinhos(u)'");
@@ -1154,8 +1256,8 @@ static Type *check_expression(Expression *expr)
             check_argument_count(expr, 1, 1);
             Type *type = check_expression(expr->arguments.items[0]);
 
-            if (type->kind != TYPE_ARRAY && type->kind != TYPE_HEAP && type->kind != TYPE_QUEUE &&
-                type->kind != TYPE_MAP && type->kind != TYPE_GRAPH)
+            if (type->kind == TYPE_STRING || type->kind == TYPE_VOID || type->kind == TYPE_INT ||
+                type->kind == TYPE_REAL || type->kind == TYPE_TUPLE || type->kind == TYPE_UNKNOWN)
             {
                 FAIL_AT_NODE(expr->arguments.items[0], "tam() não funciona com %s",
                              type_name(type));
@@ -1244,6 +1346,98 @@ static Type *check_expression(Expression *expr)
             type->directed = expr->arguments.count == 2;
             return expr->type = type;
         }
+
+        case BUILTIN_PREFIXO:
+        {
+            check_argument_count(expr, 1, 1);
+            Type *source = check_array(expr->arguments.items[0]);
+
+            if (source->dimension_count > 2 || !is_number(resolve_unknown(source->element)))
+            {
+                FAIL_AT_NODE(expr->arguments.items[0],
+                             "prefixo() recebe vetor ou matriz de números");
+            }
+
+            Type *cell = new_structure_cell();
+            cell->kind = source->element->kind;
+            return expr->type = array_type(cell, source->dimension_count);
+        }
+
+        case BUILTIN_BUSCA:
+        {
+            check_argument_count(expr, 2, 3);
+            Type *source = check_array(expr->arguments.items[0]);
+
+            if (source->dimension_count != 1)
+            {
+                FAIL_AT_NODE(expr->arguments.items[0], "busca() funciona com vetor 1D ordenado");
+            }
+
+            Type *wanted = resolve_unknown(check_expression(expr->arguments.items[1]));
+            Type *element = resolve_unknown(source->element);
+            int comparable = (is_number(wanted) && is_number(element)) ||
+                             (wanted->kind == TYPE_TUPLE && element->kind == TYPE_TUPLE &&
+                              same_tuple(wanted, element));
+
+            if (!comparable)
+            {
+                FAIL_AT_NODE(expr->arguments.items[1],
+                             "busca() procura um valor do mesmo tipo dos elementos");
+            }
+
+            if (expr->arguments.count == 3 && !is_word(expr->arguments.items[2], BUILTIN_MAIOR))
+            {
+                FAIL_AT_NODE(expr->arguments.items[2], "o terceiro argumento de busca é 'maior'");
+            }
+
+            return expr->type = &INT_TYPE;
+        }
+
+        case BUILTIN_MDC:
+        case BUILTIN_MMC:
+            check_argument_count(expr, 2, 2);
+            check_int(expr->arguments.items[0]);
+            check_int(expr->arguments.items[1]);
+            return expr->type = &INT_TYPE;
+
+        case BUILTIN_POTMOD:
+            check_argument_count(expr, 3, 3);
+
+            for (int i = 0; i < 3; i++)
+            {
+                check_int(expr->arguments.items[i]);
+            }
+
+            return expr->type = &INT_TYPE;
+
+        case BUILTIN_CRIVO:
+        {
+            check_argument_count(expr, 1, 1);
+            check_int(expr->arguments.items[0]);
+
+            Type *cell = new_structure_cell();
+            cell->kind = TYPE_INT;
+            return expr->type = array_type(cell, 1);
+        }
+
+        case BUILTIN_CONJUNTOS:
+            check_argument_count(expr, 1, 1);
+            check_int(expr->arguments.items[0]);
+            return expr->type = new_type(TYPE_DSU);
+
+        case BUILTIN_FENWICK:
+        {
+            check_argument_count(expr, 1, 1);
+            check_int(expr->arguments.items[0]);
+
+            Type *type = new_type(TYPE_FENWICK);
+            type->element = new_structure_cell();
+            return expr->type = type;
+        }
+
+        case BUILTIN_SEGTREE:
+        case BUILTIN_RMQ:
+            return expr->type = check_range_structure(expr, builtin);
 
         case BUILTIN_MAPA:
             FAIL_AT_NODE(expr, "mapa se cria com 'mapa {}'");

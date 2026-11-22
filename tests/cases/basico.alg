@@ -26,7 +26,7 @@ para x em a {
 escrever(v)
 escrever(tam(v))
 
-fn busca(w, alvo) {
+fn busca_binaria(w, alvo) {
     lo = 0
     hi = tam(w)
     enquanto lo < hi {
@@ -41,5 +41,5 @@ fn busca(w, alvo) {
 }
 
 ordenado = {1, 3, 5, 7, 9}
-escrever(busca(ordenado, 7), busca(ordenado, 0), busca(ordenado, 10))
+escrever(busca_binaria(ordenado, 7), busca_binaria(ordenado, 0), busca_binaria(ordenado, 10))
 escrever(soma(ordenado[1..3]))

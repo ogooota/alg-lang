@@ -458,7 +458,7 @@ static Expression *parse_expression(void)
 
 static void parse_statement(StatementList *out);
 
-/* { comandos }: a chave pode vir na mesma linha (if x {) ou na seguinte */
+/* { comandos } (chave na mesma linha ou na seguinte), ou um único comando sem chaves */
 static void parse_block(StatementList *out)
 {
     skip_newlines();
@@ -469,6 +469,18 @@ static void parse_block(StatementList *out)
                 "blocos usam chaves: if x { ... } (o ':' era a sintaxe antiga)");
     }
 
+    /* como em C: sem chaves, o corpo é um único comando (que pode ser outro if/for) */
+    if (!at_token(PUNCT_LEFT_BRACE))
+    {
+        if (at_token(TOKEN_EOF) || at_token(PUNCT_RIGHT_BRACE))
+        {
+            fail_at(current_token()->line, current_token()->column, "falta o corpo do bloco");
+        }
+
+        parse_statement(out);
+        return;
+    }
+
     expect_token(PUNCT_LEFT_BRACE);
     skip_newlines();
 
@@ -476,7 +488,8 @@ static void parse_block(StatementList *out)
     {
         if (at_token(TOKEN_EOF))
         {
-            fail_at(current_token()->line, current_token()->column, "falta '}' para fechar o bloco");
+            fail_at(current_token()->line, current_token()->column,
+                    "falta '}' para fechar o bloco");
         }
 
         parse_statement(out);
@@ -968,6 +981,16 @@ static const char *BUILTIN_NAMES[][2] = {
     [BUILTIN_MAIOR] = {"maior", "greater"},
     [BUILTIN_DIRIGIDO] = {"dirigido", "directed"},
     [BUILTIN_INF] = {"INF", "INF"},
+    [BUILTIN_PREFIXO] = {"prefixo", "prefix"},
+    [BUILTIN_BUSCA] = {"busca", "search"},
+    [BUILTIN_MDC] = {"mdc", "gcd"},
+    [BUILTIN_MMC] = {"mmc", "lcm"},
+    [BUILTIN_POTMOD] = {"potmod", "powmod"},
+    [BUILTIN_CRIVO] = {"crivo", "sieve"},
+    [BUILTIN_CONJUNTOS] = {"conjuntos", "dsu"},
+    [BUILTIN_FENWICK] = {"fenwick", "fenwick"},
+    [BUILTIN_SEGTREE] = {"segtree", "segtree"},
+    [BUILTIN_RMQ] = {"rmq", "rmq"},
 };
 
 /** Qual nome nativo (ler, soma, heap...) é esse nome no idioma dado. */
@@ -1006,6 +1029,16 @@ static const MethodName METHOD_NAMES[] = {
     {TYPE_QUEUE, METHOD_FRENTE, {"frente", "front"}},
     {TYPE_GRAPH, METHOD_ARESTA, {"aresta", "edge"}},
     {TYPE_GRAPH, METHOD_VIZINHOS, {"vizinhos", "neighbors"}},
+    {TYPE_DSU, METHOD_UNIR, {"unir", "merge"}},
+    {TYPE_DSU, METHOD_ACHAR, {"achar", "find"}},
+    {TYPE_DSU, METHOD_JUNTOS, {"juntos", "same"}},
+    {TYPE_DSU, METHOD_TAM_GRUPO, {"tam", "size"}},
+    {TYPE_DSU, METHOD_GRUPOS, {"grupos", "groups"}},
+    {TYPE_FENWICK, METHOD_SOMAR, {"somar", "add"}},
+    {TYPE_FENWICK, METHOD_SOMA, {"soma", "sum"}},
+    {TYPE_SEGTREE, METHOD_CONSULTA, {"consulta", "query"}},
+    {TYPE_SEGTREE, METHOD_MUDAR, {"mudar", "set"}},
+    {TYPE_RMQ, METHOD_CONSULTA, {"consulta", "query"}},
     {TYPE_MAP, METHOD_REMOVER, {"remover", "remove"}},
 };
 

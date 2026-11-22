@@ -171,7 +171,11 @@ typedef enum
     TYPE_HEAP,
     TYPE_QUEUE,
     TYPE_GRAPH,
-    TYPE_MAP
+    TYPE_MAP,
+    TYPE_DSU,
+    TYPE_FENWICK,
+    TYPE_SEGTREE,
+    TYPE_RMQ
 } TypeKind;
 
 typedef struct Type Type;
@@ -189,6 +193,7 @@ struct Type
     int descending; /* TY_HEAP: heap(maior) */
     int directed;   /* TY_GRAPH: grafo(n, dirigido) */
     int weighted;   /* TY_GRAPH: alguma aresta tem peso */
+    int combine;    /* segtree e rmq: COMBINE_MIN, COMBINE_MAX ou COMBINE_SUM */
 
     /* célula que não é de vetor (heap, fila, mapa, grafo): nunca é estreitada */
     int is_structure_cell;
@@ -375,7 +380,17 @@ typedef enum
     BUILTIN_MAPA,
     BUILTIN_MAIOR,
     BUILTIN_DIRIGIDO,
-    BUILTIN_INF
+    BUILTIN_INF,
+    BUILTIN_PREFIXO,
+    BUILTIN_BUSCA,
+    BUILTIN_MDC,
+    BUILTIN_MMC,
+    BUILTIN_POTMOD,
+    BUILTIN_CRIVO,
+    BUILTIN_CONJUNTOS,
+    BUILTIN_FENWICK,
+    BUILTIN_SEGTREE,
+    BUILTIN_RMQ
 } Builtin;
 
 /* métodos das estruturas: o nome depende do tipo do objeto */
@@ -391,10 +406,27 @@ typedef enum
     METHOD_DESENFILEIRAR,
     METHOD_FRENTE,
     METHOD_ARESTA,
-    METHOD_VIZINHOS
+    METHOD_VIZINHOS,
+    METHOD_UNIR,
+    METHOD_ACHAR,
+    METHOD_JUNTOS,
+    METHOD_TAM_GRUPO,
+    METHOD_GRUPOS,
+    METHOD_SOMAR,
+    METHOD_SOMA,
+    METHOD_CONSULTA,
+    METHOD_MUDAR
 } Method;
 
 Method method_of(TypeKind kind, const char *name, Language language);
+
+/* operação que a segtree e a rmq combinam */
+enum
+{
+    COMBINE_MIN,
+    COMBINE_MAX,
+    COMBINE_SUM
+};
 
 /* INF: grande o bastante para "infinito", com folga para INF + peso não estourar */
 #define ALG_INF 1000000000000000000LL

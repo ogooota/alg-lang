@@ -2,6 +2,9 @@
 
 #include "rt_arr.inc"
 #include "rt_core.inc"
+#include "rt_fenwick.inc"
+#include "rt_rmq.inc"
+#include "rt_segtree.inc"
 #include "rt_graph.inc"
 #include "rt_heap.inc"
 #include "rt_map.inc"
@@ -248,7 +251,10 @@ enum
     TEMPLATE_HEAP,
     TEMPLATE_QUEUE,
     TEMPLATE_MAP,
-    TEMPLATE_GRAPH
+    TEMPLATE_GRAPH,
+    TEMPLATE_FENWICK,
+    TEMPLATE_SEGTREE,
+    TEMPLATE_RMQ
 };
 
 typedef struct
@@ -271,7 +277,25 @@ static const TemplateUse *use_template(int kind, const ElementKind *element_kind
     const char *order = descending ? "max" : "min";
     const char *order_pascal = descending ? "Max" : "Min";
 
-    if (kind == TEMPLATE_HEAP)
+    static const char *const COMBINE_NAMES[] = {"min", "max", "sum"};
+    static const char *const COMBINE_PASCAL[] = {"Min", "Max", "Sum"};
+
+    if (kind == TEMPLATE_FENWICK)
+    {
+        snprintf(use.prefix, sizeof use.prefix, "fenwick_%s", element_kind->suffix);
+        snprintf(use.type_name, sizeof use.type_name, "Fenwick%s", element_kind->pascal);
+    }
+    else if (kind == TEMPLATE_SEGTREE || kind == TEMPLATE_RMQ)
+    {
+        const char *base = kind == TEMPLATE_SEGTREE ? "segtree" : "rmq";
+        const char *base_pascal = kind == TEMPLATE_SEGTREE ? "Segtree" : "Rmq";
+
+        snprintf(use.prefix, sizeof use.prefix, "%s_%s_%s", base, element_kind->suffix,
+                 COMBINE_NAMES[descending]);
+        snprintf(use.type_name, sizeof use.type_name, "%s%s%s", base_pascal, element_kind->pascal,
+                 COMBINE_PASCAL[descending]);
+    }
+    else if (kind == TEMPLATE_HEAP)
     {
         snprintf(use.prefix, sizeof use.prefix, "heap_%s_%s", element_kind->suffix, order);
         snprintf(use.type_name, sizeof use.type_name, "Heap%s%s", element_kind->pascal,
@@ -327,6 +351,16 @@ static const TemplateUse *structure_template(Type *type)
         return use_template(TEMPLATE_MAP, cell_element_kind(type->element),
                             cell_element_kind(type->value), 0);
 
+    case TYPE_FENWICK:
+        return use_template(TEMPLATE_FENWICK, cell_element_kind(type->element), NULL, 0);
+
+    case TYPE_SEGTREE:
+        return use_template(TEMPLATE_SEGTREE, cell_element_kind(type->element), NULL,
+                            type->combine);
+
+    case TYPE_RMQ:
+        return use_template(TEMPLATE_RMQ, cell_element_kind(type->element), NULL, type->combine);
+
     default:
         return use_template(TEMPLATE_GRAPH, cell_element_kind(type->element), NULL, 0);
     }
@@ -348,7 +382,8 @@ static const char *template_type(Type *type)
 static int is_structure_type(Type *type)
 {
     return type->kind == TYPE_HEAP || type->kind == TYPE_QUEUE || type->kind == TYPE_MAP ||
-           type->kind == TYPE_GRAPH;
+           type->kind == TYPE_GRAPH || type->kind == TYPE_DSU || type->kind == TYPE_FENWICK ||
+           type->kind == TYPE_SEGTREE || type->kind == TYPE_RMQ;
 }
 
 /** Escreve o tipo C de um tipo da linguagem. */
@@ -376,10 +411,17 @@ static void emit_c_type(TextBuffer *out, Type *type)
         text_append(out, tuple_element_kind(type)->c_type);
         break;
 
+    case TYPE_DSU:
+        text_append(out, "DisjointSets *");
+        break;
+
     case TYPE_HEAP:
     case TYPE_QUEUE:
     case TYPE_MAP:
     case TYPE_GRAPH:
+    case TYPE_FENWICK:
+    case TYPE_SEGTREE:
+    case TYPE_RMQ:
         text_appendf(out, "%s *", template_type(type));
         break;
 
@@ -820,6 +862,129 @@ static void gen_reduce(TextBuffer *out, Expression *expr, Builtin builtin)
 }
 
 /** Escreve uma chamada de função nativa ou do usuário. */
+/** Como ler um elemento guardado do vetor como valor da linguagem (texto "loader(x)"). */
+static void gen_loaded(TextBuffer *out, Type *array, const char *element)
+{
+    text_appendf(out, "%s(%s)", cell_element_kind(array->element)->loader, element);
+}
+
+/** prefixo(v): P[i] = soma de v[0..i); em matriz, o prefixo 2D. */
+static void gen_prefix(TextBuffer *out, Expression *expr)
+{
+    Type *source = expr->arguments.items[0]->type;
+    const char *pascal = array_pascal(source);
+    const char *result_suffix = array_suffix(expr->type);
+    const char *result_pascal = array_pascal(expr->type);
+    int temp_id = temp_counter++;
+    char element[96];
+
+    text_appendf(out, "({ Array%s _s%d = ", pascal, temp_id);
+    gen_expression(out, expr->arguments.items[0]);
+
+    if (source->dimension_count == 1)
+    {
+        text_appendf(out, "; Array%s _p%d = array_%s_new(%d, 1, _s%d.length + 1, 0, 0, 0); ",
+                     result_pascal, temp_id, result_suffix, expr->line, temp_id);
+        text_appendf(out, "for (int64_t _k%d = 0; _k%d < _s%d.length; _k%d++) { ", temp_id, temp_id,
+                     temp_id, temp_id);
+        text_appendf(out, "_p%d.data[_k%d + 1] = _p%d.data[_k%d] + ", temp_id, temp_id, temp_id,
+                     temp_id);
+        snprintf(element, sizeof element, "_s%d.data[_k%d]", temp_id, temp_id);
+        gen_loaded(out, source, element);
+        text_appendf(out, "; } _p%d; })", temp_id);
+        return;
+    }
+
+    /* 2D: P[i+1][j+1] = S[i][j] + P[i][j+1] + P[i+1][j] - P[i][j], em índices planos */
+    text_appendf(out, "; int64_t _n%d = _s%d.length; int64_t _m%d = _s%d.inner_sizes[0]; ", temp_id,
+                 temp_id, temp_id, temp_id);
+    text_appendf(out, "Array%s _p%d = array_%s_new(%d, 2, _n%d + 1, _m%d + 1, 0, 0); ",
+                 result_pascal, temp_id, result_suffix, expr->line, temp_id, temp_id);
+    text_appendf(out, "for (int64_t _i%d = 0; _i%d < _n%d; _i%d++) { ", temp_id, temp_id, temp_id,
+                 temp_id);
+    text_appendf(out, "for (int64_t _j%d = 0; _j%d < _m%d; _j%d++) { ", temp_id, temp_id, temp_id,
+                 temp_id);
+    text_appendf(out, "int64_t _w%d = _m%d + 1; ", temp_id, temp_id);
+    text_appendf(out, "_p%d.data[(_i%d + 1) * _w%d + _j%d + 1] = ", temp_id, temp_id, temp_id,
+                 temp_id);
+    snprintf(element, sizeof element, "_s%d.data[_i%d * _m%d + _j%d]", temp_id, temp_id, temp_id,
+             temp_id);
+    gen_loaded(out, source, element);
+    text_appendf(out, " + _p%d.data[_i%d * _w%d + _j%d + 1] + _p%d.data[(_i%d + 1) * _w%d + _j%d]",
+                 temp_id, temp_id, temp_id, temp_id, temp_id, temp_id, temp_id, temp_id);
+    text_appendf(out, " - _p%d.data[_i%d * _w%d + _j%d]; } } _p%d; })", temp_id, temp_id, temp_id,
+                 temp_id, temp_id);
+}
+
+/** busca(v, x): primeira posição com v[i] >= x; com 'maior', com v[i] > x. */
+static void gen_search(TextBuffer *out, Expression *expr)
+{
+    Type *source = expr->arguments.items[0]->type;
+    const ElementKind *kind = cell_element_kind(source->element);
+    int upper = expr->arguments.count == 3;
+    int temp_id = temp_counter++;
+    char element[64];
+
+    text_appendf(out, "({ Array%s _a%d = ", array_pascal(source), temp_id);
+    gen_expression(out, expr->arguments.items[0]);
+    text_append(out, "; ");
+    emit_c_type(out, expr->arguments.items[1]->type);
+    text_appendf(out, " _x%d = ", temp_id);
+    gen_expression(out, expr->arguments.items[1]);
+    text_appendf(out, "; int64_t _lo%d = 0; int64_t _hi%d = _a%d.length; ", temp_id, temp_id,
+                 temp_id);
+    text_appendf(out, "while (_lo%d < _hi%d) { int64_t _m%d = _lo%d + (_hi%d - _lo%d) / 2; ",
+                 temp_id, temp_id, temp_id, temp_id, temp_id, temp_id);
+    snprintf(element, sizeof element, "_a%d.data[_m%d]", temp_id, temp_id);
+
+    /* invariante: antes de _lo vem tudo que é < x (ou <= x com 'maior'); de _hi em diante, não */
+    if (upper)
+    {
+        text_appendf(out, "if (!%s(_x%d, ", kind->less_than, temp_id);
+        gen_loaded(out, source, element);
+        text_append(out, "))");
+    }
+    else
+    {
+        text_appendf(out, "if (%s(", kind->less_than);
+        gen_loaded(out, source, element);
+        text_appendf(out, ", _x%d))", temp_id);
+    }
+
+    text_appendf(out, " _lo%d = _m%d + 1; else _hi%d = _m%d; } _lo%d; })", temp_id, temp_id,
+                 temp_id, temp_id, temp_id);
+}
+
+/** segtree(v, op) e rmq(v, op): cria, copia os valores de v para as folhas e monta. */
+static void gen_range_structure(TextBuffer *out, Expression *expr)
+{
+    Type *source = expr->arguments.items[0]->type;
+    const char *prefix = template_name(expr->type);
+    int is_rmq = expr->type->kind == TYPE_RMQ;
+    int temp_id = temp_counter++;
+    char element[64];
+
+    text_appendf(out, "({ Array%s _a%d = ", array_pascal(source), temp_id);
+    gen_expression(out, expr->arguments.items[0]);
+    text_appendf(out, "; %s *_t%d = %s_new(_a%d.length); ", template_type(expr->type), temp_id,
+                 prefix, temp_id);
+    text_appendf(out, "for (int64_t _k%d = 0; _k%d < _a%d.length; _k%d++) { ", temp_id, temp_id,
+                 temp_id, temp_id);
+
+    if (is_rmq)
+    {
+        text_appendf(out, "_t%d->level[0][_k%d] = ", temp_id, temp_id);
+    }
+    else
+    {
+        text_appendf(out, "_t%d->tree[_a%d.length + _k%d] = ", temp_id, temp_id, temp_id);
+    }
+
+    snprintf(element, sizeof element, "_a%d.data[_k%d]", temp_id, temp_id);
+    gen_loaded(out, source, element);
+    text_appendf(out, "; } %s_build(_t%d); })", prefix, temp_id);
+}
+
 static void gen_call(TextBuffer *out, Expression *expr)
 {
     Builtin builtin = builtin_of(expr->text, LANG_PT) ? builtin_of(expr->text, LANG_PT)
@@ -842,6 +1007,58 @@ static void gen_call(TextBuffer *out, Expression *expr)
             text_appendf(out, "array_%s_sort(", array_suffix(expr->arguments.items[0]->type));
             gen_expression(out, expr->arguments.items[0]);
             text_appendf(out, ", %d, %d)", expr->arguments.count == 2, expr->line);
+            return;
+
+        case BUILTIN_PREFIXO:
+            gen_prefix(out, expr);
+            return;
+
+        case BUILTIN_BUSCA:
+            gen_search(out, expr);
+            return;
+
+        case BUILTIN_MDC:
+        case BUILTIN_MMC:
+            text_append(out, builtin == BUILTIN_MDC ? "gcd_int(" : "lcm_int(");
+            gen_expression(out, expr->arguments.items[0]);
+            text_append(out, ", ");
+            gen_expression(out, expr->arguments.items[1]);
+            text_append(out, ")");
+            return;
+
+        case BUILTIN_POTMOD:
+            text_append(out, "powmod_int(");
+
+            for (int i = 0; i < 3; i++)
+            {
+                gen_expression(out, expr->arguments.items[i]);
+                text_append(out, ", ");
+            }
+
+            text_appendf(out, "%d)", expr->line);
+            return;
+
+        case BUILTIN_CRIVO:
+        {
+            int temp_id = temp_counter++;
+            text_appendf(out, "({ int64_t _c%d; int64_t *_p%d = sieve_primes(", temp_id, temp_id);
+            gen_expression(out, expr->arguments.items[0]);
+            text_appendf(out, ", &_c%d, %d); array_%s_lit(_c%d, _p%d); })", temp_id, expr->line,
+                         array_suffix(expr->type), temp_id, temp_id);
+            return;
+        }
+
+        case BUILTIN_CONJUNTOS:
+        case BUILTIN_FENWICK:
+            text_appendf(out, "%s_new(",
+                         builtin == BUILTIN_CONJUNTOS ? "dsu" : template_name(expr->type));
+            gen_expression(out, expr->arguments.items[0]);
+            text_appendf(out, ", %d)", expr->line);
+            return;
+
+        case BUILTIN_SEGTREE:
+        case BUILTIN_RMQ:
+            gen_range_structure(out, expr);
             return;
 
         case BUILTIN_HEAP:
@@ -972,11 +1189,51 @@ static void gen_method_call(TextBuffer *out, Expression *expr)
         return;
     }
 
-    const char *c_name = template_name(type);
+    if (method == METHOD_GRUPOS)
+    {
+        text_append(out, "(");
+        gen_expression(out, expr->first);
+        text_append(out, ")->groups");
+        return;
+    }
+
+    const char *c_name = type->kind == TYPE_DSU ? "dsu" : template_name(type);
     const char *function_suffix = "?";
 
     switch (method)
     {
+    case METHOD_UNIR:
+        function_suffix = "merge";
+        break;
+
+    case METHOD_ACHAR:
+        function_suffix = "find";
+        break;
+
+    case METHOD_JUNTOS:
+        function_suffix = "same";
+        break;
+
+    case METHOD_TAM_GRUPO:
+        function_suffix = "group_size";
+        break;
+
+    case METHOD_SOMAR:
+        function_suffix = "add";
+        break;
+
+    case METHOD_SOMA:
+        function_suffix = "sum";
+        break;
+
+    case METHOD_CONSULTA:
+        function_suffix = "query";
+        break;
+
+    case METHOD_MUDAR:
+        function_suffix = "set";
+        break;
+
     case METHOD_INSERIR:
     case METHOD_ENFILEIRAR:
         function_suffix = "push";
@@ -2109,6 +2366,42 @@ static void emit_template(TextBuffer *out, const TemplateUse *template_use)
         text_append(out,
                     "#undef KEY\n#undef MAP_VALUE\n#undef MAP\n#undef HASH\n#undef KEYS_EQUAL\n"
                     "#undef KEY_ARRAY\n#undef KEY_ARRAY_FN\n");
+    }
+    else if (template_use->kind == TEMPLATE_FENWICK)
+    {
+        text_appendf(out, "#define ELEMENT %s\n#define FENWICK %s\n", element_kind->c_type,
+                     template_use->type_name);
+        emit_text(out, rt_fenwick_h, rt_fenwick_h_len);
+        text_append(out, "#undef ELEMENT\n#undef FENWICK\n");
+    }
+    else if (template_use->kind == TEMPLATE_SEGTREE || template_use->kind == TEMPLATE_RMQ)
+    {
+        static const char *const COMBINE_C[] = {"((left) < (right) ? (left) : (right))",
+                                                "((left) > (right) ? (left) : (right))",
+                                                "((left) + (right))"};
+        int is_real = element_kind->kind == 1;
+        const char *identity = template_use->descending == COMBINE_SUM ? "0"
+                               : template_use->descending == COMBINE_MIN
+                                   ? (is_real ? "INFINITY" : "INT64_MAX")
+                                   : (is_real ? "-INFINITY" : "INT64_MIN");
+        int is_rmq = template_use->kind == TEMPLATE_RMQ;
+
+        text_appendf(out, "#define ELEMENT %s\n#define %s %s\n", element_kind->c_type,
+                     is_rmq ? "RMQ" : "SEGTREE", template_use->type_name);
+        text_appendf(out, "#define COMBINE(left, right) %s\n#define IDENTITY %s\n",
+                     COMBINE_C[template_use->descending], identity);
+
+        if (is_rmq)
+        {
+            emit_text(out, rt_rmq_h, rt_rmq_h_len);
+        }
+        else
+        {
+            emit_text(out, rt_segtree_h, rt_segtree_h_len);
+        }
+
+        text_appendf(out, "#undef ELEMENT\n#undef %s\n#undef COMBINE\n#undef IDENTITY\n",
+                     is_rmq ? "RMQ" : "SEGTREE");
     }
     else
     {
