@@ -80,9 +80,9 @@ Requirements: a C compiler (`cc`/gcc), `make` and `xxd`.
 
 ```sh
 git clone https://github.com/ogooota/alg-lang && cd alg-lang
-make                         # builds ./alg
-./alg prog.alg < input.txt   # compile and run
-./alg -O -o prog prog.alg    # optimized executable
+make install                 # builds alg and installs it to ~/.local/bin (PREFIX=/usr/local for system-wide)
+alg prog.alg < input.txt     # compile and run
+alg -O -o prog prog.alg      # optimized executable
 make test                    # run the test suite
 ```
 

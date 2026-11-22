@@ -1,4 +1,5 @@
 CC ?= cc
+PREFIX ?= $(HOME)/.local
 CFLAGS ?= -std=c11 -O2 -Wall -Wextra -g
 SRC = src/util.c src/language.c src/lex.c src/parse.c src/sema.c src/sema_types.c src/sema_scope.c src/sema_expr.c \
       src/range.c src/gen.c src/gen_types.c src/gen_lazy.c src/gen_expr.c src/gen_stmt.c src/main.c
@@ -16,7 +17,15 @@ test: alg
 format:
 	clang-format -i src/*.c src/*.h rt/*.h
 
+# instala o compilador no PATH (o runtime vai embutido no binário)
+install: alg
+	install -Dm755 alg $(DESTDIR)$(PREFIX)/bin/alg
+	@echo "alg instalado em $(DESTDIR)$(PREFIX)/bin/alg"
+
+uninstall:
+	rm -f $(DESTDIR)$(PREFIX)/bin/alg
+
 clean:
 	rm -rf alg build
 
-.PHONY: test format clean
+.PHONY: test format clean install uninstall
