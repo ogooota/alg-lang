@@ -155,7 +155,8 @@ static void *arena_allocate(size_t size)
  * read() devolve assim que há dados (no terminal, a cada Enter), então
  * o programa funciona digitando ou com a entrada vinda de um arquivo.
  */
-static char input_buffer[1 << 16];
+/* um byte a mais para o sentinela '!' depois dos dados (não é espaço nem dígito) */
+static char input_buffer[(1 << 16) + 1] = {'!'};
 static size_t input_position;
 static size_t input_length;
 
@@ -170,15 +171,16 @@ static int peek_input(void)
     /* mostra o que já foi escrito antes de parar para esperar a digitação */
     flush_output();
 
-    ssize_t received = read(0, input_buffer, sizeof input_buffer);
+    ssize_t received = read(0, input_buffer, sizeof input_buffer - 1);
 
     while (received < 0 && errno == EINTR)
     {
-        received = read(0, input_buffer, sizeof input_buffer);
+        received = read(0, input_buffer, sizeof input_buffer - 1);
     }
 
     input_position = 0;
     input_length = received > 0 ? (size_t)received : 0;
+    input_buffer[input_length] = '!';
     return input_length ? (unsigned char)input_buffer[0] : -1;
 }
 
@@ -260,30 +262,32 @@ __attribute__((noinline)) static int64_t read_int_slow(int line)
 }
 
 /** Lê um real da entrada; erro se vier outra coisa. */
-/** Lê um inteiro: o caminho comum (número inteiro dentro do buffer) é inline e sem cópia. */
+/** Lê um inteiro: o caminho comum (número inteiro dentro do buffer) é inline e sem cópia.
+ * O sentinela '!' depois dos dados para os dois laços sem testar o fim do buffer. */
 static inline int64_t read_int(int line)
 {
-    while (input_position < input_length && (unsigned char)input_buffer[input_position] <= ' ')
-    {
-        input_position++;
-    }
-
     const char *cursor = input_buffer + input_position;
     const char *end = input_buffer + input_length;
-    int negative = cursor < end && *cursor == '-';
 
+    while ((unsigned char)*cursor <= ' ')
+    {
+        cursor++;
+    }
+
+    int negative = *cursor == '-';
     cursor += negative;
 
-    if (cursor < end && *cursor >= '0' && *cursor <= '9')
+    if ((unsigned)(*cursor - '0') <= 9 && cursor < end)
     {
         uint64_t value = 0;
 
-        while (cursor < end && *cursor >= '0' && *cursor <= '9')
+        while ((unsigned)(*cursor - '0') <= 9)
         {
             value = value * 10 + (uint64_t)(*cursor - '0');
             cursor++;
         }
 
+        /* terminou antes do fim do buffer e num separador: número completo */
         if (cursor < end && (unsigned char)*cursor <= ' ')
         {
             input_position = (size_t)(cursor - input_buffer);

@@ -37,7 +37,7 @@ static SEGTREE *FN(_build)(SEGTREE *segtree)
 static void FN(_set)(SEGTREE *segtree, int64_t index, ELEMENT value, int line)
 {
     /* cópias locais: escrever em tree não obriga o compilador a reler count */
-    ELEMENT *tree = segtree->tree;
+    ELEMENT *restrict tree = segtree->tree;
     int64_t count = segtree->count;
 
     check_index(index, count, line);
@@ -62,7 +62,7 @@ static ELEMENT FN(_query)(SEGTREE *segtree, int64_t low, int64_t high, int line)
 
     ELEMENT left_result = IDENTITY;
     ELEMENT right_result = IDENTITY;
-    const ELEMENT *tree = segtree->tree;
+    const ELEMENT *restrict tree = segtree->tree;
     int64_t count = segtree->count;
 
     for (int64_t l = low + count, r = high + count; l < r; l /= 2, r /= 2)

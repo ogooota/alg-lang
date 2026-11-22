@@ -25,7 +25,7 @@ static FENWICK *FN(_new)(int64_t count, int line)
 static void FN(_add)(FENWICK *fenwick, int64_t index, ELEMENT amount, int line)
 {
     /* cópias locais: escrever em tree não obriga o compilador a reler count */
-    ELEMENT *tree = fenwick->tree;
+    ELEMENT *restrict tree = fenwick->tree;
     int64_t count = fenwick->count;
 
     check_index(index, count, line);
@@ -40,7 +40,7 @@ static void FN(_add)(FENWICK *fenwick, int64_t index, ELEMENT amount, int line)
 static ELEMENT FN(_prefix)(FENWICK *fenwick, int64_t end)
 {
     ELEMENT total = 0;
-    const ELEMENT *tree = fenwick->tree;
+    const ELEMENT *restrict tree = fenwick->tree;
 
     for (int64_t i = end; i > 0; i -= i & -i)
     {
