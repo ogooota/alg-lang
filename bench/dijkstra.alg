@@ -1,34 +1,34 @@
-#lang pt
+#lang en
 #decl dist[n];
 
-ler(n, m)
-g = grafo(n, dirigido)
-para i=0 ate m {
-    ler(u, v, w)
-    g.aresta(u, v, w)
+read(n, m)
+g = graph(n, directed)
+for i=0 to m {
+    read(u, v, w)
+    g.edge(u, v, w)
 }
-para i=0 ate n {
+for i=0 to n {
     dist[i] = INF
 }
 dist[0] = 0
 h = heap()
-h.inserir((0, 0))
-enquanto tam(h) > 0 {
-    (d, u) = h.remover()
-    se d > dist[u] {
+h.push((0, 0))
+while len(h) > 0 {
+    (d, u) = h.pop()
+    if d > dist[u] {
         continue
     }
-    para (v, w) em g.vizinhos(u) {
-        se d + w < dist[v] {
+    for (v, w) in g.neighbors(u) {
+        if d + w < dist[v] {
             dist[v] = d + w
-            h.inserir((dist[v], v))
+            h.push((dist[v], v))
         }
     }
 }
 total = 0
-para i=0 ate n {
-    se dist[i] < INF {
+for i=0 to n {
+    if dist[i] < INF {
         total = total + dist[i]
     }
 }
-escrever(total)
+write(total)

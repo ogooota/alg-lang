@@ -24,11 +24,15 @@ static FENWICK *FN(_new)(int64_t count, int line)
 /** Soma amount na posição index (0-based). */
 static void FN(_add)(FENWICK *fenwick, int64_t index, ELEMENT amount, int line)
 {
-    check_index(index, fenwick->count, line);
+    /* cópias locais: escrever em tree não obriga o compilador a reler count */
+    ELEMENT *tree = fenwick->tree;
+    int64_t count = fenwick->count;
 
-    for (int64_t i = index + 1; i <= fenwick->count; i += i & -i)
+    check_index(index, count, line);
+
+    for (int64_t i = index + 1; i <= count; i += i & -i)
     {
-        fenwick->tree[i] += amount;
+        tree[i] += amount;
     }
 }
 
@@ -36,10 +40,11 @@ static void FN(_add)(FENWICK *fenwick, int64_t index, ELEMENT amount, int line)
 static ELEMENT FN(_prefix)(FENWICK *fenwick, int64_t end)
 {
     ELEMENT total = 0;
+    const ELEMENT *tree = fenwick->tree;
 
     for (int64_t i = end; i > 0; i -= i & -i)
     {
-        total += fenwick->tree[i];
+        total += tree[i];
     }
 
     return total;

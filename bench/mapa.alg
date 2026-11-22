@@ -1,12 +1,12 @@
-#lang pt
-cont = mapa {}
-ler(n)
-para i=0 ate n {
-    ler(x)
+#lang en
+cont = map {}
+read(n)
+for i=0 to n {
+    read(x)
     cont[x] = cont[x] + 1
 }
 melhor = 0
-para (k, c) em cont {
+for (k, c) in cont {
     melhor = max(melhor, c)
 }
-escrever(tam(cont), melhor)
+write(len(cont), melhor)

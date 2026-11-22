@@ -1,25 +1,25 @@
-#lang pt
+#lang en
 #decl dist[n]: int32;
 
-ler(n, m)
-g = grafo(n)
-para i=0 ate m {
-    ler(u, v)
-    g.aresta(u, v)
+read(n, m)
+g = graph(n)
+for i=0 to m {
+    read(u, v)
+    g.edge(u, v)
 }
-para i=0 ate n {
+for i=0 to n {
     dist[i] = -1
 }
 dist[0] = 0
-q = fila()
-q.enfileirar(0)
-enquanto tam(q) > 0 {
-    u = q.desenfileirar()
-    para v em g.vizinhos(u) {
-        se dist[v] == -1 {
+q = queue()
+q.push(0)
+while len(q) > 0 {
+    u = q.pop()
+    for v in g.neighbors(u) {
+        if dist[v] == -1 {
             dist[v] = dist[u] + 1
-            q.enfileirar(v)
+            q.push(v)
         }
     }
 }
-escrever(soma(dist), max(dist))
+write(sum(dist), max(dist))

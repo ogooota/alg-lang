@@ -143,7 +143,7 @@ Técnicas que aparecem em quase toda maratona viram parte da linguagem: menos c�
 |---|---|---|---|
 | `d = conjuntos(n)` | `d = dsu(n)` | `d.unir(a, b)` (devolve 1 se juntou dois grupos), `d.achar(a)`, `d.juntos(a, b)`, `d.tam(a)` (tamanho do grupo de `a`), `d.grupos()` | ≈O(1) (union by size + path halving) |
 | `f = fenwick(n)` | `f = fenwick(n)` | `f.somar(i, x)` (soma `x` na posição `i`), `f.soma(l, r)` (soma de `[l, r)`) | O(log n) |
-| `s = segtree(v, min)` | `s = segtree(v, min)` | também `max` e `soma`/`sum`; `s.consulta(l, r)` (resultado em `[l, r)`), `s.mudar(i, x)` (troca o valor da posição `i`) | O(log n) |
+| `s = segtree(v, min)` | `s = segtree(v, min)` | também `max` e `soma`/`sum`; `s.consulta(l, r)` (resultado em `[l, r)`), `s.mudar(i, x)` (en: `s.update(i, x)`; troca o valor da posição `i`) | O(log n) |
 | `r = rmq(v, min)` | `r = rmq(v, min)` | também `max`; `r.consulta(l, r)`; vetor que não muda (sparse table) | O(1) consulta, O(n log n) construção |
 
 Detalhes:

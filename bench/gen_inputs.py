@@ -36,3 +36,33 @@ write("bfs.in", f"{n} {m}\n" + "\n".join(f"{r.randrange(n)} {r.randrange(n)}" fo
 n = 10**6
 write("mapa.in", f"{n}\n" + " ".join(str(r.randint(0, 3 * 10**5)) for _ in range(n)) + "\n")
 print("entradas geradas em", HERE)
+
+# estruturas nativas (técnicas)
+r = random.Random(11)
+n = q = 10**6
+write("dsu.in", f"{n} {q}\n" + "\n".join(
+    f"{r.randint(1, 2)} {r.randrange(n)} {r.randrange(n)}" for _ in range(q)) + "\n")
+
+
+def updates_and_ranges(r, n, q, kind_first, value_max):
+    lines = []
+    for _ in range(q):
+        if r.random() < 0.5:
+            lines.append(f"1 {r.randrange(n)} {r.randint(0, value_max)}")
+        else:
+            low = r.randrange(n)
+            high = r.randint(low + 1, n)
+            lines.append(f"2 {low} {high}")
+    return "\n".join(lines)
+
+
+write("fenwick.in", f"{n} {q}\n" + updates_and_ranges(r, n, q, 1, 1000) + "\n")
+values = " ".join(str(r.randint(0, 10**9)) for _ in range(n))
+write("segtree.in", f"{n} {q}\n{values}\n" + updates_and_ranges(r, n, q, 1, 10**9) + "\n")
+ranges = []
+for _ in range(q):
+    low = r.randrange(n)
+    ranges.append(f"{low} {r.randint(low + 1, n)}")
+write("rmq.in", f"{n} {q}\n{values}\n" + "\n".join(ranges) + "\n")
+write("primes.in", "20000000\n")
+print("entradas das estruturas geradas")

@@ -37,7 +37,7 @@ syntax keyword algWord maior dirigido greater directed
 " métodos das estruturas (depois do ponto)
 syntax match algMethod "\.\zs\(adicionar\|remover_ultimo\|inserir\|remover\|topo\|enfileirar\|desenfileirar\|frente\|aresta\|vizinhos\)\>"
 syntax match algMethod "\.\zs\(add\|pop\|push\|top\|front\|edge\|neighbors\|remove\)\>"
-syntax match algMethod "\.\zs\(unir\|achar\|juntos\|grupos\|somar\|consulta\|mudar\|merge\|find\|same\|groups\|size\|query\|set\|sum\|soma\|tam\)\>"
+syntax match algMethod "\.\zs\(unir\|achar\|juntos\|grupos\|somar\|consulta\|mudar\|merge\|find\|same\|groups\|size\|query\|update\|sum\|soma\|tam\)\>"
 
 " reservadas para os próximos marcos
 syntax keyword algReserved todo existe algum uniao inter menos tipo all exists some union minus type

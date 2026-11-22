@@ -41,7 +41,8 @@ no `ios::sync_with_stdio(false)` and no `long long` anywhere.
 ## Why alg
 
 - **Less to write.** Reading an array is `read(n, a[0..n])`. Printing is `write(a, b, v)`. Every integer is 64-bit.
-  Tuples, sorting, heaps, queues, maps and graphs are built in.
+  Tuples, sorting, heaps, queues, maps and graphs are built in, and so are contest techniques: prefix sums,
+  binary search, gcd/lcm/powmod, a prime sieve, union-find, Fenwick tree, segment tree and sparse table.
 - **Fewer classic bugs.** `-7 % 2` is `1` (never negative), `INF + w` does not overflow, `x & 1 == 0` means what it says,
   recursion gets a 256 MB stack, undirected graphs add both edges, and the map uses a random hash seed per run.
 - **Fast.** Fast I/O, radix sort, a compact (CSR) graph layout, open-addressing maps, and a range analysis that stores each
@@ -65,6 +66,10 @@ alg with `-O` against C++ `-O2` (with `sync_with_stdio(false)`), same input, bes
 | LCS 4000 × 4000 | 0.96× |
 | sieve up to 2·10⁷ | 0.99× |
 | recursive fib(38) | 1.01× |
+| union-find, 10⁶ operations | 0.50× |
+| Fenwick tree, 10⁶ updates and sums | 0.53× |
+| segment tree (min), 10⁶ updates and queries | 0.56× |
+| sparse table, 10⁶ range minimums | 0.57× |
 
 Part of the gap is input speed. Against C++ with a hand-written fast reader, alg still comes out ahead on sorting (0.74×),
 Dijkstra (0.62×), BFS (0.52×) and maps (0.86×). Reproduce with `python3 bench/gen_inputs.py && python3 bench/run.py`.

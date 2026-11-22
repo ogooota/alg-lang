@@ -1,11 +1,11 @@
-#lang pt
+#lang en
 #decl pre[n + 1];
 
-ler(n, a[0..n], q)
-para i=0 ate n {
+read(n, a[0..n], q)
+for i=0 to n {
     pre[i + 1] = pre[i] + a[i]
 }
-para k=0 ate q {
-    ler(l, r)
-    escrever(pre[r] - pre[l])
+for k=0 to q {
+    read(l, r)
+    write(pre[r] - pre[l])
 }

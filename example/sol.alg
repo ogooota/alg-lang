@@ -1,11 +1,10 @@
 #lang en 
 #decl {
-    pre[n+1];
+
 }
 
-read(n, l, r, a[0..n])
-for i=0 to n {
-    pre[i+1]=pre[i]+a[i]
-}
+read(n, a[0..n])
+pre=prefix(a)
+for i=0 to len(pre) 
+    write(pre[i])
 
-write(pre[r]-pre[l-1])

@@ -1037,7 +1037,7 @@ static const MethodName METHOD_NAMES[] = {
     {TYPE_FENWICK, METHOD_SOMAR, {"somar", "add"}},
     {TYPE_FENWICK, METHOD_SOMA, {"soma", "sum"}},
     {TYPE_SEGTREE, METHOD_CONSULTA, {"consulta", "query"}},
-    {TYPE_SEGTREE, METHOD_MUDAR, {"mudar", "set"}},
+    {TYPE_SEGTREE, METHOD_MUDAR, {"mudar", "update"}},
     {TYPE_RMQ, METHOD_CONSULTA, {"consulta", "query"}},
     {TYPE_MAP, METHOD_REMOVER, {"remover", "remove"}},
 };

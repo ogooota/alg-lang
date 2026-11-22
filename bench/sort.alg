@@ -1,8 +1,8 @@
-#lang pt
-ler(n, v[0..n])
-ordenar(v)
+#lang en
+read(n, v[0..n])
+sort(v)
 total = 0
-para i=0 ate n {
+for i=0 to n {
     total = (total + v[i] % 1000003 * (i % 1000)) % 1000000007
 }
-escrever(total)
+write(total)

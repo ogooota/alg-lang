@@ -350,13 +350,13 @@
   <button class="lang-switch" type="button" id="lang-switch">Português</button>
 <div class="lang" data-lang="en" lang="en">
 <header><div class="eyebrow">a language for competitive programming</div><h1>alg</h1><p class="lead prose">alg reads like textbook pseudocode and compiles to C. You write the algorithm; it takes care of fast input, 64-bit integers, negative remainders and picking the right data structure. Every example below shows the same solution in C++ next to it, so you can see what you no longer have to write.</p>
-<nav class="toc"><a href="#en-run">Run</a><a href="#en-basics">Basics</a><a href="#en-prefix">Range sums</a><a href="#en-knapsack">Knapsack</a><a href="#en-activities">Greedy</a><a href="#en-truck">Binary search</a><a href="#en-frequency">Counting</a><a href="#en-bfs">BFS</a><a href="#en-dijkstra">Dijkstra</a><a href="#en-translation">C++ → alg</a><a href="#en-pitfalls">Pitfalls</a><a href="#en-speed">Speed</a></nav></header>
+<nav class="toc"><a href="#en-run">Run</a><a href="#en-basics">Basics</a><a href="#en-prefix">Range sums</a><a href="#en-knapsack">Knapsack</a><a href="#en-activities">Greedy</a><a href="#en-truck">Binary search</a><a href="#en-frequency">Counting</a><a href="#en-bfs">BFS</a><a href="#en-dijkstra">Dijkstra</a><a href="#en-kruskal">Kruskal</a><a href="#en-techniques">Techniques</a><a href="#en-translation">C++ → alg</a><a href="#en-pitfalls">Pitfalls</a><a href="#en-speed">Speed</a></nav></header>
 <section id="en-run" class="prose"><div class="eyebrow">first</div><h2>Running a program</h2><p>Files use the <code>.alg</code> extension. The first line picks the keyword language: <code>#lang en</code> or <code>#lang pt</code> (Portuguese).</p>
 <pre><code class="lang-sh">./alg sol.alg                 # compile and run; type the input
 ./alg sol.alg &lt; input.txt     # or pipe a file
 ./alg -O -o sol sol.alg       # fast executable, no checks (to submit)
 ./alg -O --emit-c sol.alg     # print the generated C (judges accept it as C)</code></pre><p>Without <code>-O</code>, an out-of-bounds index, a division by zero or popping an empty structure stops with the line number: <code>erro (linha 12): índice 7 fora de 0..5</code> (messages are in Portuguese for now). With <code>-O</code> the checks go away and the code runs as fast as C.</p></section>
-<section id="en-basics"><div class="eyebrow">syntax</div><h2>The basics on one screen</h2><p class="prose">Blocks use braces. There are no types to declare: <code>x = 5</code> creates a 64-bit integer. Comments start with <code>//</code>, a newline ends a statement and a trailing <code>;</code> is optional.</p><div class="grid-basics">
+<section id="en-basics"><div class="eyebrow">syntax</div><h2>The basics on one screen</h2><p class="prose">Blocks use braces, and a single-statement body needs none, as in C. There are no types to declare: <code>x = 5</code> creates a 64-bit integer. Comments start with <code>//</code>, a newline ends a statement and a trailing <code>;</code> is optional.</p><div class="grid-basics">
 <div><h3>Input and output</h3><pre><code class="lang-alg">read(n, m)          // two integers
 read(v[0..n])       // creates v, reads n values
 read(grid[0..n][0..m])
@@ -709,6 +709,70 @@ int main() {
         cout &lt;&lt; dist[i] &lt;&lt; " \n"[i == n - 1];
 }</code></pre></figure></div>
 <ul class="notes"><li><code>heap()</code> pops the smallest first: no <code>greater&lt;&gt;</code>, no negated keys. For the largest first, <code>heap(greater)</code>.</li><li><code>INF</code> is 10<sup>18</sup>, leaving room for <code>INF + w</code>. In an <code>: int32</code> array the compiler stores it specially and it still reads back as INF.</li><li><code>write(dist)</code> prints the whole array separated by spaces.</li></ul></section>
+<section class="problem" id="en-kruskal"><div class="eyebrow">union-find · O(m log m)</div><h3>Minimum spanning tree (Kruskal)</h3><p>Connect all <var>n</var> cities with roads of minimum total cost. Sort the roads by cost and take each one that joins two separate groups. Input <code>4 5 / 1 2 4 / 2 3 1 / 1 3 3 / 3 4 2 / 2 4 5</code> → <code>6</code>.</p><div class="compare">
+<figure><figcaption><strong>alg</strong><span>14 lines</span></figcaption><pre><code class="lang-alg">#lang en
+read(n, m)
+edges = {}
+for i=0 to m {
+    read(u, v, w)
+    edges.add((w, u - 1, v - 1))
+}
+sort(edges)
+d = dsu(n)
+total = 0
+for (w, u, v) in edges
+    if d.merge(u, v)
+        total += w
+write(total)</code></pre></figure>
+<figure class="cpp"><figcaption><strong>C++</strong><span>35 lines</span></figcaption><pre><code class="lang-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+struct DSU {
+    vector&lt;int&gt; parent, size;
+    DSU(int n) : parent(n), size(n, 1) { iota(parent.begin(), parent.end(), 0); }
+    int find(int x) {
+        while (parent[x] != x) x = parent[x] = parent[parent[x]];
+        return x;
+    }
+    bool merge(int a, int b) {
+        a = find(a), b = find(b);
+        if (a == b) return false;
+        if (size[a] &lt; size[b]) swap(a, b);
+        parent[b] = a;
+        size[a] += size[b];
+        return true;
+    }
+};
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n, m;
+    cin &gt;&gt; n &gt;&gt; m;
+    vector&lt;tuple&lt;long long, int, int&gt;&gt; edges(m);
+    for (auto &amp;[w, u, v] : edges) {
+        cin &gt;&gt; u &gt;&gt; v &gt;&gt; w;
+        u--, v--;
+    }
+    sort(edges.begin(), edges.end());
+    DSU d(n);
+    long long total = 0;
+    for (auto [w, u, v] : edges)
+        if (d.merge(u, v)) total += w;
+    cout &lt;&lt; total &lt;&lt; '\n';
+}</code></pre></figure></div>
+<ul class="notes"><li><code>dsu(n)</code> is built in (union by size + path halving): no struct to copy from your notebook.</li><li><code>d.merge(u, v)</code> returns 1 when it joined two groups, so the loop body is a single <code>if</code>, and single-statement bodies need no braces.</li></ul></section>
+<section id="en-techniques"><div class="eyebrow">built in</div><h2>Contest techniques as functions</h2><p class="prose">Techniques that show up in almost every contest are part of the language, so there is no template to paste and no classic implementation to get wrong. Ranges follow the language rule: <code>[l, r)</code>.</p><div class="table-wrap"><table><thead><tr><th>Call</th><th>What it does</th><th>Cost</th></tr></thead><tbody>
+<tr><td><code>prefix(v)</code></td><td>array <code>P</code> of size <code>n + 1</code> with <code>P[i] = v[0] + ... + v[i-1]</code>; the sum of <code>v[l..r)</code> is <code>P[r] - P[l]</code>. On a matrix, the 2D prefix</td><td class="num">O(n)</td></tr>
+<tr><td><code>search(v, x)</code></td><td>first index with <code>v[i] &gt;= x</code> in a sorted array; <code>search(v, x, greater)</code> for <code>v[i] &gt; x</code></td><td class="num">O(log n)</td></tr>
+<tr><td><code>gcd, lcm</code></td><td>greatest common divisor and least common multiple</td><td class="num">O(log)</td></tr>
+<tr><td><code>powmod(b, e, m)</code></td><td><code>b<sup>e</sup> mod m</code> by fast exponentiation, no overflow</td><td class="num">O(log e)</td></tr>
+<tr><td><code>sieve(n)</code></td><td>array of the primes up to <code>n</code></td><td class="num">O(n log log n)</td></tr>
+<tr><td><code>dsu(n)</code></td><td>union-find: <code>merge(a, b)</code>, <code>find(a)</code>, <code>same(a, b)</code>, <code>size(a)</code>, <code>groups()</code></td><td class="num">≈O(1)</td></tr>
+<tr><td><code>fenwick(n)</code></td><td><code>add(i, x)</code> and <code>sum(l, r)</code> over <code>[l, r)</code></td><td class="num">O(log n)</td></tr>
+<tr><td><code>segtree(v, min)</code></td><td>also <code>max</code> and <code>sum</code>; <code>query(l, r)</code> and <code>update(i, x)</code></td><td class="num">O(log n)</td></tr>
+<tr><td><code>rmq(v, min)</code></td><td>sparse table for an array that does not change; <code>query(l, r)</code></td><td class="num">O(1)</td></tr>
+</tbody></table></div></section>
 <section id="en-translation"><div class="eyebrow">quick reference</div><h2>C++ → alg</h2><div class="table-wrap"><table><thead><tr><th>C++</th><th>alg</th><th>Note</th></tr></thead><tbody>
 <tr><td><code>cin &gt;&gt; n;</code> + <code>vector&lt;ll&gt; a(n)</code> + loop</td><td><code>read(n, a[0..n])</code></td><td>reads and creates the array</td></tr>
 <tr><td><code>cout &lt;&lt; a &lt;&lt; ' ' &lt;&lt; b &lt;&lt; '\n';</code></td><td><code>write(a, b)</code></td><td>buffered output</td></tr>
@@ -751,17 +815,22 @@ int main() {
 <tr><td>LCS 4000 × 4000</td><td class="num">0.072 s</td><td class="num">0.074 s</td><td class="num">0.96×</td></tr>
 <tr><td>sieve up to 2·10<sup>7</sup></td><td class="num">0.181 s</td><td class="num">0.186 s</td><td class="num">0.99×</td></tr>
 <tr><td>recursive fib(38)</td><td class="num">0.095 s</td><td class="num">0.093 s</td><td class="num">1.01×</td></tr>
-</tbody></table></div><div class="callout"><p>Part of the advantage on the structure problems comes from input reading. Against C++ with a hand-written fast reader, alg still wins: sorting 0.74×, Dijkstra 0.62×, BFS 0.52×, map 0.86×.</p></div></section>
+<tr><td>union-find, 10<sup>6</sup> operations</td><td class="num">0.163 s</td><td class="num">0.324 s</td><td class="num">0.50×</td></tr>
+<tr><td>Fenwick, 10<sup>6</sup> updates and sums</td><td class="num">0.168 s</td><td class="num">0.319 s</td><td class="num">0.53×</td></tr>
+<tr><td>segment tree (min), 10<sup>6</sup> updates and queries</td><td class="num">0.258 s</td><td class="num">0.462 s</td><td class="num">0.56×</td></tr>
+<tr><td>sparse table, 10<sup>6</sup> range minimums</td><td class="num">0.247 s</td><td class="num">0.435 s</td><td class="num">0.57×</td></tr>
+<tr><td>sieve to 2·10<sup>7</sup> (built-in)</td><td class="num">0.194 s</td><td class="num">0.193 s</td><td class="num">1.01×</td></tr>
+</tbody></table></div><div class="callout"><p>Part of the advantage on the structure problems comes from input reading. Against C++ with a hand-written fast reader, alg still wins on sorting (0.56×), Dijkstra (0.55×), BFS (0.53×) and maps (0.69×), and is within 10% on the technique structures (union-find 0.98×, Fenwick 1.01×, segment tree 1.09×, sparse table 0.90×), which contestants usually code by hand.</p></div></section>
 <footer class="prose"><p>Full specification (in Portuguese) in <code>docs/linguagem.md</code>. To benchmark on your machine: <code>python3 bench/gen_inputs.py && python3 bench/run.py</code>.</p></footer></div>
 <div class="lang" data-lang="pt" lang="pt" hidden>
 <header><div class="eyebrow">linguagem para maratona de programação</div><h1>alg</h1><p class="lead prose">O alg se lê como o pseudocódigo do livro e compila para C. Você escreve o algoritmo; ele cuida da leitura rápida da entrada, do <code>long long</code>, do resto negativo e da estrutura de dados certa. Cada exemplo abaixo traz a mesma solução em C++ ao lado, para você ver o que deixa de escrever.</p>
-<nav class="toc"><a href="#pt-run">Rodar</a><a href="#pt-basics">O básico</a><a href="#pt-prefix">Soma de intervalo</a><a href="#pt-knapsack">Mochila</a><a href="#pt-activities">Guloso</a><a href="#pt-truck">Busca binária</a><a href="#pt-frequency">Contagem</a><a href="#pt-bfs">BFS</a><a href="#pt-dijkstra">Dijkstra</a><a href="#pt-translation">C++ → alg</a><a href="#pt-pitfalls">Armadilhas</a><a href="#pt-speed">Desempenho</a></nav></header>
+<nav class="toc"><a href="#pt-run">Rodar</a><a href="#pt-basics">O básico</a><a href="#pt-prefix">Soma de intervalo</a><a href="#pt-knapsack">Mochila</a><a href="#pt-activities">Guloso</a><a href="#pt-truck">Busca binária</a><a href="#pt-frequency">Contagem</a><a href="#pt-bfs">BFS</a><a href="#pt-dijkstra">Dijkstra</a><a href="#pt-kruskal">Kruskal</a><a href="#pt-techniques">Técnicas</a><a href="#pt-translation">C++ → alg</a><a href="#pt-pitfalls">Armadilhas</a><a href="#pt-speed">Desempenho</a></nav></header>
 <section id="pt-run" class="prose"><div class="eyebrow">antes de tudo</div><h2>Rodar um programa</h2><p>O arquivo tem extensão <code>.alg</code>. A primeira linha diz o idioma das palavras-chave: <code>#lang pt</code> ou <code>#lang en</code>.</p>
 <pre><code class="lang-sh">./alg sol.alg                 # compila e roda; digite a entrada
 ./alg sol.alg &lt; entrada.txt   # ou mande um arquivo
 ./alg -O -o sol sol.alg       # executável rápido, sem checagens (para submeter)
 ./alg -O --emit-c sol.alg     # mostra o C gerado (dá para enviar ao juiz como C)</code></pre><p>Sem <code>-O</code>, índice fora do vetor, divisão por zero e estrutura vazia viram erro com a linha: <code>erro (linha 12): índice 7 fora de 0..5</code>. Com <code>-O</code> essas checagens saem e o código fica tão rápido quanto C.</p></section>
-<section id="pt-basics"><div class="eyebrow">sintaxe</div><h2>O básico em uma tela</h2><p class="prose">Blocos usam chaves. Não há tipos para declarar: <code>x = 5</code> cria um inteiro de 64 bits. Comentário é <code>//</code>, o fim da linha termina o comando e o <code>;</code> no fim é opcional.</p><div class="grid-basics">
+<section id="pt-basics"><div class="eyebrow">sintaxe</div><h2>O básico em uma tela</h2><p class="prose">Blocos usam chaves, e um corpo de um comando só dispensa as chaves, como em C. Não há tipos para declarar: <code>x = 5</code> cria um inteiro de 64 bits. Comentário é <code>//</code>, o fim da linha termina o comando e o <code>;</code> no fim é opcional.</p><div class="grid-basics">
 <div><h3>Entrada e saída</h3><pre><code class="lang-alg">ler(n, m)          // dois inteiros
 ler(v[0..n])       // cria v e lê n valores
 ler(grade[0..n][0..m])
@@ -1114,6 +1183,70 @@ int main() {
         cout &lt;&lt; dist[i] &lt;&lt; " \n"[i == n - 1];
 }</code></pre></figure></div>
 <ul class="notes"><li><code>heap()</code> já tira o menor primeiro: nada de <code>greater&lt;&gt;</code> nem de inverter sinal. Para o maior primeiro, <code>heap(maior)</code>.</li><li><code>INF</code> vale 10<sup>18</sup>, com folga para <code>INF + w</code>. Num vetor <code>: int32</code>, o compilador guarda INF de um jeito especial e ele continua valendo INF quando lido.</li><li><code>escrever(dist)</code> escreve o vetor inteiro separado por espaço.</li></ul></section>
+<section class="problem" id="pt-kruskal"><div class="eyebrow">union-find · O(m log m)</div><h3>Árvore geradora mínima (Kruskal)</h3><p>Ligue as <var>n</var> cidades com estradas de custo total mínimo. Ordene as estradas pelo custo e pegue cada uma que junta dois grupos separados. Entrada <code>4 5 / 1 2 4 / 2 3 1 / 1 3 3 / 3 4 2 / 2 4 5</code> → <code>6</code>.</p><div class="compare">
+<figure><figcaption><strong>alg</strong><span>14 linhas</span></figcaption><pre><code class="lang-alg">#lang pt
+ler(n, m)
+arestas = {}
+para i=0 ate m {
+    ler(u, v, w)
+    arestas.adicionar((w, u - 1, v - 1))
+}
+ordenar(arestas)
+d = conjuntos(n)
+total = 0
+para (w, u, v) em arestas
+    se d.unir(u, v)
+        total += w
+escrever(total)</code></pre></figure>
+<figure class="cpp"><figcaption><strong>C++</strong><span>35 linhas</span></figcaption><pre><code class="lang-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+struct DSU {
+    vector&lt;int&gt; parent, size;
+    DSU(int n) : parent(n), size(n, 1) { iota(parent.begin(), parent.end(), 0); }
+    int find(int x) {
+        while (parent[x] != x) x = parent[x] = parent[parent[x]];
+        return x;
+    }
+    bool merge(int a, int b) {
+        a = find(a), b = find(b);
+        if (a == b) return false;
+        if (size[a] &lt; size[b]) swap(a, b);
+        parent[b] = a;
+        size[a] += size[b];
+        return true;
+    }
+};
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n, m;
+    cin &gt;&gt; n &gt;&gt; m;
+    vector&lt;tuple&lt;long long, int, int&gt;&gt; edges(m);
+    for (auto &amp;[w, u, v] : edges) {
+        cin &gt;&gt; u &gt;&gt; v &gt;&gt; w;
+        u--, v--;
+    }
+    sort(edges.begin(), edges.end());
+    DSU d(n);
+    long long total = 0;
+    for (auto [w, u, v] : edges)
+        if (d.merge(u, v)) total += w;
+    cout &lt;&lt; total &lt;&lt; '\n';
+}</code></pre></figure></div>
+<ul class="notes"><li><code>conjuntos(n)</code> já vem pronto (união por tamanho + compressão de caminho): nada de copiar a struct do caderno.</li><li><code>d.unir(u, v)</code> devolve 1 quando juntou dois grupos, então o corpo do laço é um único <code>se</code>, e corpo de um comando só dispensa as chaves.</li></ul></section>
+<section id="pt-techniques"><div class="eyebrow">nativo</div><h2>Técnicas de maratona como funções</h2><p class="prose">Técnicas que aparecem em quase toda maratona fazem parte da linguagem: nada de colar template nem de errar a implementação clássica. Intervalos seguem a regra da linguagem: <code>[l, r)</code>.</p><div class="table-wrap"><table><thead><tr><th>Chamada</th><th>O que faz</th><th>Custo</th></tr></thead><tbody>
+<tr><td><code>prefixo(v)</code></td><td>vetor <code>P</code> de tamanho <code>n + 1</code> com <code>P[i] = v[0] + ... + v[i-1]</code>; a soma de <code>v[l..r)</code> é <code>P[r] - P[l]</code>. Em matriz, o prefixo 2D</td><td class="num">O(n)</td></tr>
+<tr><td><code>busca(v, x)</code></td><td>primeira posição com <code>v[i] &gt;= x</code> em vetor ordenado; <code>busca(v, x, maior)</code> para <code>v[i] &gt; x</code></td><td class="num">O(log n)</td></tr>
+<tr><td><code>mdc, mmc</code></td><td>máximo divisor comum e mínimo múltiplo comum</td><td class="num">O(log)</td></tr>
+<tr><td><code>potmod(b, e, m)</code></td><td><code>b<sup>e</sup> mod m</code> por exponenciação rápida, sem estouro</td><td class="num">O(log e)</td></tr>
+<tr><td><code>crivo(n)</code></td><td>vetor com os primos até <code>n</code></td><td class="num">O(n log log n)</td></tr>
+<tr><td><code>conjuntos(n)</code></td><td>union-find: <code>unir(a, b)</code>, <code>achar(a)</code>, <code>juntos(a, b)</code>, <code>tam(a)</code>, <code>grupos()</code></td><td class="num">≈O(1)</td></tr>
+<tr><td><code>fenwick(n)</code></td><td><code>somar(i, x)</code> e <code>soma(l, r)</code> em <code>[l, r)</code></td><td class="num">O(log n)</td></tr>
+<tr><td><code>segtree(v, min)</code></td><td>também <code>max</code> e <code>soma</code>; <code>consulta(l, r)</code> e <code>mudar(i, x)</code></td><td class="num">O(log n)</td></tr>
+<tr><td><code>rmq(v, min)</code></td><td>sparse table para vetor que não muda; <code>consulta(l, r)</code></td><td class="num">O(1)</td></tr>
+</tbody></table></div></section>
 <section id="pt-translation"><div class="eyebrow">referência rápida</div><h2>Tradução C++ → alg</h2><div class="table-wrap"><table><thead><tr><th>C++</th><th>alg</th><th>Observação</th></tr></thead><tbody>
 <tr><td><code>cin &gt;&gt; n;</code> + <code>vector&lt;ll&gt; a(n)</code> + loop</td><td><code>ler(n, a[0..n])</code></td><td>lê e cria o vetor</td></tr>
 <tr><td><code>cout &lt;&lt; a &lt;&lt; ' ' &lt;&lt; b &lt;&lt; '\n';</code></td><td><code>escrever(a, b)</code></td><td>saída bufferizada</td></tr>
@@ -1156,7 +1289,12 @@ int main() {
 <tr><td>LCS 4000 × 4000</td><td class="num">0,072 s</td><td class="num">0,074 s</td><td class="num">0,96×</td></tr>
 <tr><td>crivo até 2·10<sup>7</sup></td><td class="num">0,181 s</td><td class="num">0,186 s</td><td class="num">0,99×</td></tr>
 <tr><td>fib(38) recursivo</td><td class="num">0,095 s</td><td class="num">0,093 s</td><td class="num">1,01×</td></tr>
-</tbody></table></div><div class="callout"><p>Nos problemas de estrutura, parte da vantagem vem da leitura de entrada. Contra C++ com um leitor rápido feito à mão, o alg continua na frente: ordenar 0,74×, Dijkstra 0,62×, BFS 0,52×, mapa 0,86×.</p></div></section>
+<tr><td>union-find, 10<sup>6</sup> operações</td><td class="num">0,163 s</td><td class="num">0,324 s</td><td class="num">0,50×</td></tr>
+<tr><td>Fenwick, 10<sup>6</sup> atualizações e somas</td><td class="num">0,168 s</td><td class="num">0,319 s</td><td class="num">0,53×</td></tr>
+<tr><td>segtree (min), 10<sup>6</sup> atualizações e consultas</td><td class="num">0,258 s</td><td class="num">0,462 s</td><td class="num">0,56×</td></tr>
+<tr><td>sparse table, 10<sup>6</sup> mínimos de intervalo</td><td class="num">0,247 s</td><td class="num">0,435 s</td><td class="num">0,57×</td></tr>
+<tr><td>crivo até 2·10<sup>7</sup> (nativo)</td><td class="num">0,194 s</td><td class="num">0,193 s</td><td class="num">1,01×</td></tr>
+</tbody></table></div><div class="callout"><p>Nos problemas de estrutura, parte da vantagem vem da leitura de entrada. Contra C++ com um leitor rápido feito à mão, o alg continua na frente em ordenar (0,56×), Dijkstra (0,55×), BFS (0,53×) e mapa (0,69×), e fica a menos de 10% nas estruturas de técnica (union-find 0,98×, Fenwick 1,01×, segtree 1,09×, sparse table 0,90×), que o competidor costuma escrever à mão.</p></div></section>
 <footer class="prose"><p>Especificação completa em <code>docs/linguagem.md</code>. Para medir no seu computador: <code>python3 bench/gen_inputs.py && python3 bench/run.py</code>.</p></footer></div>
 </main>
 
@@ -1165,7 +1303,7 @@ int main() {
     const ALG = {
       flow: ["se", "senao", "enquanto", "para", "ate", "em", "ret", "pare", "continue", "inc", "dec", "if", "else", "while", "for", "to", "in", "thr", "break"],
       kw: ["fn", "e", "ou", "nao", "and", "or", "not", "verdadeiro", "falso", "true", "false", "INF", "maior", "dirigido", "greater", "directed"],
-      bi: ["ler", "escrever", "tamanho", "copia", "soma", "min", "max", "ordenar", "heap", "fila", "grafo", "mapa", "read", "write", "len", "tam", "sum", "sort", "queue", "graph", "map", "copy"],
+      bi: ["ler", "escrever", "tamanho", "copia", "soma", "min", "max", "ordenar", "heap", "fila", "grafo", "mapa", "read", "write", "len", "tam", "sum", "sort", "queue", "graph", "map", "copy", "prefix", "prefixo", "search", "busca", "gcd", "lcm", "mdc", "mmc", "powmod", "potmod", "sieve", "crivo", "dsu", "conjuntos", "fenwick", "segtree", "rmq"],
       ty: ["int", "int32", "real"],
     };
     const CPP = {

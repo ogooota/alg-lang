@@ -36,14 +36,18 @@ static SEGTREE *FN(_build)(SEGTREE *segtree)
 /** Troca o valor da posição index e atualiza os ancestrais. */
 static void FN(_set)(SEGTREE *segtree, int64_t index, ELEMENT value, int line)
 {
-    check_index(index, segtree->count, line);
+    /* cópias locais: escrever em tree não obriga o compilador a reler count */
+    ELEMENT *tree = segtree->tree;
+    int64_t count = segtree->count;
 
-    int64_t k = index + segtree->count;
-    segtree->tree[k] = value;
+    check_index(index, count, line);
+
+    int64_t k = index + count;
+    tree[k] = value;
 
     for (k /= 2; k > 0; k /= 2)
     {
-        segtree->tree[k] = COMBINE(segtree->tree[2 * k], segtree->tree[2 * k + 1]);
+        tree[k] = COMBINE(tree[2 * k], tree[2 * k + 1]);
     }
 }
 
@@ -58,19 +62,21 @@ static ELEMENT FN(_query)(SEGTREE *segtree, int64_t low, int64_t high, int line)
 
     ELEMENT left_result = IDENTITY;
     ELEMENT right_result = IDENTITY;
+    const ELEMENT *tree = segtree->tree;
+    int64_t count = segtree->count;
 
-    for (int64_t l = low + segtree->count, r = high + segtree->count; l < r; l /= 2, r /= 2)
+    for (int64_t l = low + count, r = high + count; l < r; l /= 2, r /= 2)
     {
         if (l & 1)
         {
-            left_result = COMBINE(left_result, segtree->tree[l]);
+            left_result = COMBINE(left_result, tree[l]);
             l++;
         }
 
         if (r & 1)
         {
             r--;
-            right_result = COMBINE(segtree->tree[r], right_result);
+            right_result = COMBINE(tree[r], right_result);
         }
     }
 

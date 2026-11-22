@@ -83,6 +83,26 @@ PROBLEMS = [
                  ["<code>heap()</code> já tira o menor primeiro: nada de <code>greater&lt;&gt;</code> nem de inverter sinal. Para o maior primeiro, <code>heap(maior)</code>.",
                   "<code>INF</code> vale 10<sup>18</sup>, com folga para <code>INF + w</code>. Num vetor <code>: int32</code>, o compilador guarda INF de um jeito especial e ele continua valendo INF quando lido.",
                   "<code>escrever(dist)</code> escreve o vetor inteiro separado por espaço."])),
+    dict(slug="kruskal", tag=t("union-find · O(m log m)", "union-find · O(m log m)"),
+         title=t("Minimum spanning tree (Kruskal)", "Árvore geradora mínima (Kruskal)"),
+         text=t("Connect all <var>n</var> cities with roads of minimum total cost. Sort the roads by cost and take each one that joins two separate groups. Input <code>4 5 / 1 2 4 / 2 3 1 / 1 3 3 / 3 4 2 / 2 4 5</code> → <code>6</code>.",
+                "Ligue as <var>n</var> cidades com estradas de custo total mínimo. Ordene as estradas pelo custo e pegue cada uma que junta dois grupos separados. Entrada <code>4 5 / 1 2 4 / 2 3 1 / 1 3 3 / 3 4 2 / 2 4 5</code> → <code>6</code>."),
+         notes=t(["<code>dsu(n)</code> is built in (union by size + path halving): no struct to copy from your notebook.",
+                  "<code>d.merge(u, v)</code> returns 1 when it joined two groups, so the loop body is a single <code>if</code>, and single-statement bodies need no braces."],
+                 ["<code>conjuntos(n)</code> já vem pronto (união por tamanho + compressão de caminho): nada de copiar a struct do caderno.",
+                  "<code>d.unir(u, v)</code> devolve 1 quando juntou dois grupos, então o corpo do laço é um único <code>se</code>, e corpo de um comando só dispensa as chaves."])),
+]
+
+TECHNIQUES = [
+    ("prefix(v)", "prefixo(v)", t("array <code>P</code> of size <code>n + 1</code> with <code>P[i] = v[0] + ... + v[i-1]</code>; the sum of <code>v[l..r)</code> is <code>P[r] - P[l]</code>. On a matrix, the 2D prefix", "vetor <code>P</code> de tamanho <code>n + 1</code> com <code>P[i] = v[0] + ... + v[i-1]</code>; a soma de <code>v[l..r)</code> é <code>P[r] - P[l]</code>. Em matriz, o prefixo 2D"), "O(n)"),
+    ("search(v, x)", "busca(v, x)", t("first index with <code>v[i] &gt;= x</code> in a sorted array; <code>search(v, x, greater)</code> for <code>v[i] &gt; x</code>", "primeira posição com <code>v[i] &gt;= x</code> em vetor ordenado; <code>busca(v, x, maior)</code> para <code>v[i] &gt; x</code>"), "O(log n)"),
+    ("gcd, lcm", "mdc, mmc", t("greatest common divisor and least common multiple", "máximo divisor comum e mínimo múltiplo comum"), "O(log)"),
+    ("powmod(b, e, m)", "potmod(b, e, m)", t("<code>b<sup>e</sup> mod m</code> by fast exponentiation, no overflow", "<code>b<sup>e</sup> mod m</code> por exponenciação rápida, sem estouro"), "O(log e)"),
+    ("sieve(n)", "crivo(n)", t("array of the primes up to <code>n</code>", "vetor com os primos até <code>n</code>"), "O(n log log n)"),
+    ("dsu(n)", "conjuntos(n)", t("union-find: <code>merge(a, b)</code>, <code>find(a)</code>, <code>same(a, b)</code>, <code>size(a)</code>, <code>groups()</code>", "union-find: <code>unir(a, b)</code>, <code>achar(a)</code>, <code>juntos(a, b)</code>, <code>tam(a)</code>, <code>grupos()</code>"), "≈O(1)"),
+    ("fenwick(n)", "fenwick(n)", t("<code>add(i, x)</code> and <code>sum(l, r)</code> over <code>[l, r)</code>", "<code>somar(i, x)</code> e <code>soma(l, r)</code> em <code>[l, r)</code>"), "O(log n)"),
+    ("segtree(v, min)", "segtree(v, min)", t("also <code>max</code> and <code>sum</code>; <code>query(l, r)</code> and <code>update(i, x)</code>", "também <code>max</code> e <code>soma</code>; <code>consulta(l, r)</code> e <code>mudar(i, x)</code>"), "O(log n)"),
+    ("rmq(v, min)", "rmq(v, min)", t("sparse table for an array that does not change; <code>query(l, r)</code>", "sparse table para vetor que não muda; <code>consulta(l, r)</code>"), "O(1)"),
 ]
 
 BASICS = {
@@ -158,19 +178,24 @@ PERF = [
     (t("LCS 4000 × 4000", "LCS 4000 × 4000"), "0.072", "0.074", "0.96"),
     (t("sieve up to 2·10<sup>7</sup>", "crivo até 2·10<sup>7</sup>"), "0.181", "0.186", "0.99"),
     (t("recursive fib(38)", "fib(38) recursivo"), "0.095", "0.093", "1.01"),
+    (t("union-find, 10<sup>6</sup> operations", "union-find, 10<sup>6</sup> operações"), "0.163", "0.324", "0.50"),
+    (t("Fenwick, 10<sup>6</sup> updates and sums", "Fenwick, 10<sup>6</sup> atualizações e somas"), "0.168", "0.319", "0.53"),
+    (t("segment tree (min), 10<sup>6</sup> updates and queries", "segtree (min), 10<sup>6</sup> atualizações e consultas"), "0.258", "0.462", "0.56"),
+    (t("sparse table, 10<sup>6</sup> range minimums", "sparse table, 10<sup>6</sup> mínimos de intervalo"), "0.247", "0.435", "0.57"),
+    (t("sieve to 2·10<sup>7</sup> (built-in)", "crivo até 2·10<sup>7</sup> (nativo)"), "0.194", "0.193", "1.01"),
 ]
 
 UI = {
     "en": dict(
         eyebrow="a language for competitive programming",
         lead="alg reads like textbook pseudocode and compiles to C. You write the algorithm; it takes care of fast input, 64-bit integers, negative remainders and picking the right data structure. Every example below shows the same solution in C++ next to it, so you can see what you no longer have to write.",
-        toc=["Run", "Basics", "Range sums", "Knapsack", "Greedy", "Binary search", "Counting", "BFS", "Dijkstra", "C++ → alg", "Pitfalls", "Speed"],
+        toc=["Run", "Basics", "Range sums", "Knapsack", "Greedy", "Binary search", "Counting", "BFS", "Dijkstra", "Kruskal", "Techniques", "C++ → alg", "Pitfalls", "Speed"],
         run_eyebrow="first", run_title="Running a program",
         run_text="Files use the <code>.alg</code> extension. The first line picks the keyword language: <code>#lang en</code> or <code>#lang pt</code> (Portuguese).",
         run_cmds="./alg sol.alg                 # compile and run; type the input\n./alg sol.alg < input.txt     # or pipe a file\n./alg -O -o sol sol.alg       # fast executable, no checks (to submit)\n./alg -O --emit-c sol.alg     # print the generated C (judges accept it as C)",
         run_after="Without <code>-O</code>, an out-of-bounds index, a division by zero or popping an empty structure stops with the line number: <code>erro (linha 12): índice 7 fora de 0..5</code> (messages are in Portuguese for now). With <code>-O</code> the checks go away and the code runs as fast as C.",
         basics_eyebrow="syntax", basics_title="The basics on one screen",
-        basics_text="Blocks use braces. There are no types to declare: <code>x = 5</code> creates a 64-bit integer. Comments start with <code>//</code>, a newline ends a statement and a trailing <code>;</code> is optional.",
+        basics_text="Blocks use braces, and a single-statement body needs none, as in C. There are no types to declare: <code>x = 5</code> creates a 64-bit integer. Comments start with <code>//</code>, a newline ends a statement and a trailing <code>;</code> is optional.",
         problems_title="Contest problems, side by side",
         problems_text="Every alg solution here was compiled and tested against the sample input, and gives the same output as the C++ version, which is written the way contestants usually write it (with <code>sync_with_stdio(false)</code>).",
         lines="lines", translation_eyebrow="quick reference", translation_title="C++ → alg",
@@ -179,20 +204,23 @@ UI = {
         perf_eyebrow="measured", perf_title="Speed",
         perf_text="alg with <code>-O</code> against C++ <code>-O2</code> with optimized <code>cin</code>, same input, best of 5 runs. Below 1 means alg was faster.",
         col_problem="Problem", col_ratio="Ratio",
-        perf_callout="Part of the advantage on the structure problems comes from input reading. Against C++ with a hand-written fast reader, alg still wins: sorting 0.74×, Dijkstra 0.62×, BFS 0.52×, map 0.86×.",
+        perf_callout="Part of the advantage on the structure problems comes from input reading. Against C++ with a hand-written fast reader, alg still wins on sorting (0.56×), Dijkstra (0.55×), BFS (0.53×) and maps (0.69×), and is within 10% on the technique structures (union-find 0.98×, Fenwick 1.01×, segment tree 1.09×, sparse table 0.90×), which contestants usually code by hand.",
         footer="Full specification (in Portuguese) in <code>docs/linguagem.md</code>. To benchmark on your machine: <code>python3 bench/gen_inputs.py && python3 bench/run.py</code>.",
         switch="Português", decimal=".",
+        tech_eyebrow="built in", tech_title="Contest techniques as functions",
+        tech_text="Techniques that show up in almost every contest are part of the language, so there is no template to paste and no classic implementation to get wrong. Ranges follow the language rule: <code>[l, r)</code>.",
+        col_call="Call", col_does="What it does", col_cost="Cost",
     ),
     "pt": dict(
         eyebrow="linguagem para maratona de programação",
         lead="O alg se lê como o pseudocódigo do livro e compila para C. Você escreve o algoritmo; ele cuida da leitura rápida da entrada, do <code>long long</code>, do resto negativo e da estrutura de dados certa. Cada exemplo abaixo traz a mesma solução em C++ ao lado, para você ver o que deixa de escrever.",
-        toc=["Rodar", "O básico", "Soma de intervalo", "Mochila", "Guloso", "Busca binária", "Contagem", "BFS", "Dijkstra", "C++ → alg", "Armadilhas", "Desempenho"],
+        toc=["Rodar", "O básico", "Soma de intervalo", "Mochila", "Guloso", "Busca binária", "Contagem", "BFS", "Dijkstra", "Kruskal", "Técnicas", "C++ → alg", "Armadilhas", "Desempenho"],
         run_eyebrow="antes de tudo", run_title="Rodar um programa",
         run_text="O arquivo tem extensão <code>.alg</code>. A primeira linha diz o idioma das palavras-chave: <code>#lang pt</code> ou <code>#lang en</code>.",
         run_cmds="./alg sol.alg                 # compila e roda; digite a entrada\n./alg sol.alg < entrada.txt   # ou mande um arquivo\n./alg -O -o sol sol.alg       # executável rápido, sem checagens (para submeter)\n./alg -O --emit-c sol.alg     # mostra o C gerado (dá para enviar ao juiz como C)",
         run_after="Sem <code>-O</code>, índice fora do vetor, divisão por zero e estrutura vazia viram erro com a linha: <code>erro (linha 12): índice 7 fora de 0..5</code>. Com <code>-O</code> essas checagens saem e o código fica tão rápido quanto C.",
         basics_eyebrow="sintaxe", basics_title="O básico em uma tela",
-        basics_text="Blocos usam chaves. Não há tipos para declarar: <code>x = 5</code> cria um inteiro de 64 bits. Comentário é <code>//</code>, o fim da linha termina o comando e o <code>;</code> no fim é opcional.",
+        basics_text="Blocos usam chaves, e um corpo de um comando só dispensa as chaves, como em C. Não há tipos para declarar: <code>x = 5</code> cria um inteiro de 64 bits. Comentário é <code>//</code>, o fim da linha termina o comando e o <code>;</code> no fim é opcional.",
         problems_title="Problemas de maratona, lado a lado",
         problems_text="Cada solução em alg foi compilada e testada com a entrada de exemplo e dá a mesma saída da versão em C++, escrita como um competidor escreve no dia a dia (com <code>sync_with_stdio(false)</code>).",
         lines="linhas", translation_eyebrow="referência rápida", translation_title="Tradução C++ → alg",
@@ -201,13 +229,16 @@ UI = {
         perf_eyebrow="medido", perf_title="Desempenho",
         perf_text="alg com <code>-O</code> contra C++ <code>-O2</code> com <code>cin</code> otimizado, mesma entrada, melhor de 5 execuções. Menor que 1 significa que o alg foi mais rápido.",
         col_problem="Problema", col_ratio="Razão",
-        perf_callout="Nos problemas de estrutura, parte da vantagem vem da leitura de entrada. Contra C++ com um leitor rápido feito à mão, o alg continua na frente: ordenar 0,74×, Dijkstra 0,62×, BFS 0,52×, mapa 0,86×.",
+        perf_callout="Nos problemas de estrutura, parte da vantagem vem da leitura de entrada. Contra C++ com um leitor rápido feito à mão, o alg continua na frente em ordenar (0,56×), Dijkstra (0,55×), BFS (0,53×) e mapa (0,69×), e fica a menos de 10% nas estruturas de técnica (union-find 0,98×, Fenwick 1,01×, segtree 1,09×, sparse table 0,90×), que o competidor costuma escrever à mão.",
         footer="Especificação completa em <code>docs/linguagem.md</code>. Para medir no seu computador: <code>python3 bench/gen_inputs.py && python3 bench/run.py</code>.",
         switch="English", decimal=",",
+        tech_eyebrow="nativo", tech_title="Técnicas de maratona como funções",
+        tech_text="Técnicas que aparecem em quase toda maratona fazem parte da linguagem: nada de colar template nem de errar a implementação clássica. Intervalos seguem a regra da linguagem: <code>[l, r)</code>.",
+        col_call="Chamada", col_does="O que faz", col_cost="Custo",
     ),
 }
 
-ANCHORS = ["run", "basics", "prefix", "knapsack", "activities", "truck", "frequency", "bfs", "dijkstra", "translation", "pitfalls", "speed"]
+ANCHORS = ["run", "basics", "prefix", "knapsack", "activities", "truck", "frequency", "bfs", "dijkstra", "kruskal", "techniques", "translation", "pitfalls", "speed"]
 
 
 def number(value, lang):
@@ -233,6 +264,10 @@ def build(lang):
         out.append(f'<figure><figcaption><strong>alg</strong><span>{lines(alg)} {ui["lines"]}</span></figcaption>{code_block(alg, "alg")}</figure>')
         out.append(f'<figure class="cpp"><figcaption><strong>C++</strong><span>{lines(cpp)} {ui["lines"]}</span></figcaption>{code_block(cpp, "cpp")}</figure></div>')
         out.append('<ul class="notes">' + "".join(f"<li>{n}</li>" for n in p["notes"][lang]) + "</ul></section>")
+    out.append(f'<section id="{lang}-techniques"><div class="eyebrow">{ui["tech_eyebrow"]}</div><h2>{ui["tech_title"]}</h2><p class="prose">{ui["tech_text"]}</p><div class="table-wrap"><table><thead><tr><th>{ui["col_call"]}</th><th>{ui["col_does"]}</th><th>{ui["col_cost"]}</th></tr></thead><tbody>')
+    for en_name, pt_name, does, cost in TECHNIQUES:
+        out.append(f"<tr><td><code>{en_name if lang == 'en' else pt_name}</code></td><td>{does[lang]}</td><td class=\"num\">{cost}</td></tr>")
+    out.append("</tbody></table></div></section>")
     out.append(f'<section id="{lang}-translation"><div class="eyebrow">{ui["translation_eyebrow"]}</div><h2>{ui["translation_title"]}</h2><div class="table-wrap"><table><thead><tr><th>{ui["col_cpp"]}</th><th>{ui["col_alg"]}</th><th>{ui["col_note"]}</th></tr></thead><tbody>')
     for cpp, en, pt, note in TRANSLATION:
         out.append(f"<tr><td>{cpp}</td><td>{en if lang == 'en' else pt}</td><td>{note[lang]}</td></tr>")

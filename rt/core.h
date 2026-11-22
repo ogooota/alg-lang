@@ -222,7 +222,8 @@ static size_t read_token(char *buffer, size_t capacity)
 }
 
 /** Lê um inteiro da entrada; erro se vier outra coisa. */
-static int64_t read_int(int line)
+/** Caminho lento: número na fronteira entre blocos, entrada interativa ou erro. */
+__attribute__((noinline)) static int64_t read_int_slow(int line)
 {
     char token[64];
     char *cursor = token;
@@ -259,6 +260,40 @@ static int64_t read_int(int line)
 }
 
 /** Lê um real da entrada; erro se vier outra coisa. */
+/** Lê um inteiro: o caminho comum (número inteiro dentro do buffer) é inline e sem cópia. */
+static inline int64_t read_int(int line)
+{
+    while (input_position < input_length && (unsigned char)input_buffer[input_position] <= ' ')
+    {
+        input_position++;
+    }
+
+    const char *cursor = input_buffer + input_position;
+    const char *end = input_buffer + input_length;
+    int negative = cursor < end && *cursor == '-';
+
+    cursor += negative;
+
+    if (cursor < end && *cursor >= '0' && *cursor <= '9')
+    {
+        uint64_t value = 0;
+
+        while (cursor < end && *cursor >= '0' && *cursor <= '9')
+        {
+            value = value * 10 + (uint64_t)(*cursor - '0');
+            cursor++;
+        }
+
+        if (cursor < end && (unsigned char)*cursor <= ' ')
+        {
+            input_position = (size_t)(cursor - input_buffer);
+            return negative ? (int64_t)(0 - value) : (int64_t)value;
+        }
+    }
+
+    return read_int_slow(line);
+}
+
 static double read_real(int line)
 {
     char token[128];

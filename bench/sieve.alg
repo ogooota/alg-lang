@@ -1,16 +1,16 @@
-#lang pt
+#lang en
 #decl composto[n + 1];
 
-ler(n)
+read(n)
 total = 0
-para i=2 ate em n {
-    se nao composto[i] {
+for i=2 thr n {
+    if not composto[i] {
         total = total + 1
         j = i * i
-        enquanto j <= n {
+        while j <= n {
             composto[j] = 1
             j = j + i
         }
     }
 }
-escrever(total)
+write(total)
