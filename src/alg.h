@@ -155,6 +155,8 @@ typedef enum
 } Language;
 
 TokenList tokenize(const char *source, Language *language);
+TokenKind keyword_of(const char *name, Language language);
+const char *keyword_spelling(TokenKind kind);
 const char *token_name(TokenKind kind);
 
 /* ---------- tipos ---------- */

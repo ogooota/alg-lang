@@ -1,6 +1,31 @@
 # Como o compilador funciona
 
-`fonte .alg → tokenize (lex.c) → parse (parse.c) → check_program (sema.c) → analyze_ranges (range.c) → generate_c (gen.c) → cc`
+`fonte .alg → tokenize → parse → check_program → analyze_ranges → generate_c → cc`
+
+## Módulos
+
+| Arquivo | Responsabilidade |
+|---|---|
+| `alg.h` | tipos compartilhados (tokens, tipos, AST, programa) e a interface de cada fase |
+| `util.c` | alocação, buffer de texto, mensagens de erro |
+| `language.c` | palavras-chave, nomes nativos e métodos em cada idioma (o único lugar com palavras pt/en) |
+| `lex.c` | texto → tokens |
+| `parse.c` | tokens → AST |
+| `sema_internal.h` | estado e funções compartilhados pela checagem semântica |
+| `sema_types.c` | tipos: unificação, células de elemento, assinaturas |
+| `sema_scope.c` | escopos (tabela hash por escopo), variáveis, cópia de corpos, versões de função |
+| `sema_expr.c` | checagem de expressões, chamadas nativas e métodos |
+| `sema.c` | checagem de comandos e a entrada `check_program` |
+| `range.c` | análise de faixa (tamanho dos elementos dos vetores) |
+| `gen_internal.h` | estado e funções compartilhados pela geração de C |
+| `gen_types.c` | tipo C de cada tipo da linguagem, tipos de elemento, instâncias de template |
+| `gen_lazy.c` | análise do `#decl` (checagem fora dos laços) e variáveis usadas em funções |
+| `gen_expr.c` | expressões, chamadas nativas, ler/escrever |
+| `gen_stmt.c` | comandos e laços |
+| `gen.c` | emissão final: runtime, templates usados, funções, `alg_main` |
+| `main.c` | linha de comando, chama o `cc` |
+
+A divisão não muda o C gerado: o teste de regressão da modularização comparou byte a byte a saída de todos os programas de `tests/`, `bench/` e `docs/examples/`, com e sem `-O`.
 
 ## AST: uso dos campos `first`, `second`, `third`
 
