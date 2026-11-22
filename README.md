@@ -76,13 +76,22 @@ alg with `-O` against C++ `-O2` (with `sync_with_stdio(false)`), same input, bes
 Part of the gap is input speed. Against C++ with a hand-written fast reader, alg still comes out ahead on sorting (0.74×),
 Dijkstra (0.62×), BFS (0.52×) and maps (0.86×). Reproduce with `python3 bench/gen_inputs.py && python3 bench/run.py`.
 
-The same nine problems in C, Rust, JavaScript and Python (`python3 bench/langs/run.py`), geometric mean of time vs C++ (lower is better):
+### Ranking across languages
 
-| alg -O | C -O2 | Rust -O | C++ -O2 | JS (Node) | Python |
-|---|---|---|---|---|---|
-| 0.54× | 0.66× | 0.69× | 1.00× | 1.67× | 10.6× |
+The same nine problems (sort, prefix sums, sieve, knapsack, recursive fib, union-find, hash map, Dijkstra, word count) in each language. Score is the geometric mean of run time relative to C++ (lower is better):
 
-C and Rust use a fast reader; the C++ versions use plain `cin` with `sync_with_stdio(false)`.
+| # | language | time vs C++ |
+|---|---|---|
+| 1 | **alg -O** | **0.54×** |
+| 2 | C -O2 | 0.66× |
+| 3 | Rust (opt-level 3) | 0.69× |
+| 4 | C++ -O2 | 1.00× |
+| 5 | JavaScript (Node 24) | 1.67× |
+| 6 | Python 3.12 | 10.6× |
+
+The C, Rust and JS versions use a fast input reader. The C++ versions use plain `cin` with `sync_with_stdio(false)`.
+
+> **Run it on your own machine.** These numbers come from one laptop: an Intel i5-7200U on WSL2, with gcc 13, rustc 1.99, Node 24 and Python 3.12. Your CPU, compiler versions and OS will change them. Reproduce with `python3 bench/gen_inputs.py && python3 bench/langs/run.py`; the script checks that every language prints the same answer.
 
 ## Getting started
 
