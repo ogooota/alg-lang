@@ -78,16 +78,30 @@ Dijkstra (0.62×), BFS (0.52×) and maps (0.86×). Reproduce with `python3 bench
 
 ### Ranking across languages
 
-The same nine problems (sort, prefix sums, sieve, knapsack, recursive fib, union-find, hash map, Dijkstra, word count) in each language. Score is the geometric mean of run time relative to C++ (lower is better):
+The same nine problems in each language. Each number says how many times longer than alg the language took (geometric mean over the nine problems), so alg is 1.00× and higher means slower:
 
-| # | language | time vs C++ |
+| # | language | time vs alg |
 |---|---|---|
-| 1 | **alg -O** | **0.54×** |
-| 2 | C -O2 | 0.66× |
-| 3 | Rust (opt-level 3) | 0.69× |
-| 4 | C++ -O2 | 1.00× |
-| 5 | JavaScript (Node 24) | 1.67× |
-| 6 | Python 3.12 | 10.6× |
+| 1 | **alg -O** | **1.00×** |
+| 2 | C -O2 | 1.22× |
+| 3 | Rust (opt-level 3) | 1.27× |
+| 4 | C++ -O2 | 1.85× |
+| 5 | JavaScript (Node 24) | 3.09× |
+| 6 | Python 3.12 | 19.7× |
+
+Per problem (time vs alg; below 1.00× means faster than alg):
+
+| problem | C | Rust | C++ | JS | Python |
+|---|---|---|---|---|---|
+| sort 10⁶ integers | 3.53× | 1.35× | 3.38× | 8.20× | 23.6× |
+| prefix sums, 10⁶ queries | 1.48× | 1.25× | 2.44× | 3.34× | 10.4× |
+| sieve up to 2·10⁷ | 0.95× | 0.97× | 0.98× | 1.48× | 10.6× |
+| 0/1 knapsack | 1.77× | 3.51× | 1.79× | 5.65× | 619× |
+| recursive fib(38) | 1.08× | 1.30× | 0.97× | 6.75× | 78.4× |
+| union-find, 10⁶ operations | 1.13× | 1.00× | 1.93× | 1.89× | 13.3× |
+| count 10⁶ values with a map | 0.91× | 0.97× | 2.50× | 2.39× | 4.24× |
+| Dijkstra, 10⁵ vertices, 10⁶ edges | 1.18× | 2.23× | 3.46× | 1.95× | 26.6× |
+| count 10⁶ words | 0.53× | 0.52× | 1.08× | 1.89× | 2.33× |
 
 The C, Rust and JS versions use a fast input reader. The C++ versions use plain `cin` with `sync_with_stdio(false)`.
 

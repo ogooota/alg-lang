@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Mesmo problema em várias linguagens: compila, mede (intercalado) e confere que as saídas batem com o C++."""
+"""Mesmo problema em várias linguagens: compila, mede (intercalado), compara com o alg e confere que as saídas batem."""
 import os, shutil, subprocess, sys, time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -53,8 +53,8 @@ for p in PROBLEMS:
             outputs[name] = output
             if elapsed > 3:
                 slow.add(name)
-    reference = outputs["C++ -O2"]
-    base = best["C++ -O2"]
+    reference = outputs["alg -O"]
+    base = best["alg -O"]
     print(f"\n{p}")
     for name in langs:
         t = best[name]
@@ -63,10 +63,10 @@ for p in PROBLEMS:
             summary.setdefault(name, []).append(None)
             continue
         mark = "" if outputs[name] == reference else "  SAÍDA DIFERENTE"
-        print(f"  {name:10} {t:7.3f}s  {t / base:6.2f}x C++{mark}")
+        print(f"  {name:10} {t:7.3f}s  {t / base:6.2f}x alg{mark}")
         summary.setdefault(name, []).append(t / base)
 
-print("\nmédia geométrica (x C++, menor é melhor):")
+print("\nmédia geométrica (x alg: quantas vezes o tempo do alg; menor é melhor):")
 for name, ratios in summary.items():
     done = [r for r in ratios if r is not None]
     mean = 1.0
