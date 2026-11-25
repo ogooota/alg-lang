@@ -516,6 +516,132 @@ static void FN(_radix)(ELEMENT *data, int64_t count)
 
 #endif
 
+#if KIND == 2
+
+/* empates do 1º campo ficam contíguos depois do radix: introsort só dentro de cada bloco */
+static void FN(_sort_ties)(ELEMENT *data, int64_t count, int depth)
+{
+    for (int64_t low = 0; low < count;)
+    {
+        uint64_t key = ORDER_KEY(data[low]);
+        int64_t high = low + 1;
+
+        while (high < count && ORDER_KEY(data[high]) == key)
+        {
+            high++;
+        }
+
+        if (high - low > 1)
+        {
+            FN(_intro)(data + low, high - low, depth);
+        }
+
+        low = high;
+    }
+}
+
+/**
+ * Tupla pequena (até 24 bytes): radix LSD movendo os próprios elementos, pelo prefixo de 64 bits
+ * do 1º campo; os 8 histogramas saem numa passada só e bytes iguais em todos são pulados.
+ */
+static void FN(_tuple_radix)(ELEMENT *data, int64_t count, int depth)
+{
+    ELEMENT *buffer = malloc((size_t)count * sizeof *buffer);
+    static int64_t histogram[8][256];
+
+    if (!buffer)
+    {
+        runtime_error(0, "memória esgotada");
+    }
+
+    memset(histogram, 0, sizeof histogram);
+
+    for (int64_t i = 0; i < count; i++)
+    {
+        uint64_t key = ORDER_KEY(data[i]);
+
+        for (int byte = 0; byte < 8; byte++)
+        {
+            histogram[byte][(key >> (8 * byte)) & 0xFF]++;
+        }
+    }
+
+    ELEMENT *source = data;
+
+    for (int byte = 0; byte < 8; byte++)
+    {
+        int64_t *start = histogram[byte];
+
+        /* byte igual em todos: um balde só tem tudo, nada a mover */
+        if (start[(ORDER_KEY(data[0]) >> (8 * byte)) & 0xFF] == count)
+        {
+            continue;
+        }
+
+        for (int64_t digit = 0, total = 0; digit < 256; digit++)
+        {
+            int64_t size = start[digit];
+            start[digit] = total;
+            total += size;
+        }
+
+        ELEMENT *target = source == data ? buffer : data;
+
+        for (int64_t i = 0; i < count; i++)
+        {
+            target[start[(ORDER_KEY(source[i]) >> (8 * byte)) & 0xFF]++] = source[i];
+        }
+
+        source = target;
+    }
+
+    if (source != data)
+    {
+        memcpy(data, source, (size_t)count * sizeof *data);
+    }
+
+    free(buffer);
+    FN(_sort_ties)(data, count, depth);
+}
+
+/** Tupla grande: radix nas chaves (prefixo + posição, 16 bytes) e uma cópia na ordem final. */
+static void FN(_tuple_sort)(ELEMENT *data, int64_t count, int depth)
+{
+    if (sizeof(ELEMENT) <= 24)
+    {
+        FN(_tuple_radix)(data, count, depth);
+        return;
+    }
+
+    OrderKey *keys = malloc((size_t)count * sizeof *keys);
+    ELEMENT *sorted = malloc((size_t)count * sizeof *sorted);
+
+    if (!keys || !sorted)
+    {
+        runtime_error(0, "memória esgotada");
+    }
+
+    for (int64_t i = 0; i < count; i++)
+    {
+        keys[i].prefix = ORDER_KEY(data[i]);
+        keys[i].index = (uint64_t)i;
+    }
+
+    order_sort(keys, count, NULL, NULL);
+
+    for (int64_t i = 0; i < count; i++)
+    {
+        sorted[i] = data[keys[i].index];
+    }
+
+    memcpy(data, sorted, (size_t)count * sizeof *data);
+    free(keys);
+    free(sorted);
+    FN(_sort_ties)(data, count, depth);
+}
+
+#endif
+
 /** Ordena o vetor 1D (radix para inteiros, introsort para o resto); maior primeiro se pedido. */
 static void FN(_sort)(ARRAY array, int descending, int line)
 {
@@ -542,6 +668,15 @@ static void FN(_sort)(ARRAY array, int descending, int line)
     }
 #elif KIND == 3
     str_sort(array.data, array.length);
+#elif KIND == 2
+    if (array.length > 256)
+    {
+        FN(_tuple_sort)(array.data, array.length, depth);
+    }
+    else
+    {
+        FN(_intro)(array.data, array.length, depth);
+    }
 #else
     FN(_intro)(array.data, array.length, depth);
 #endif

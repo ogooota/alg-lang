@@ -189,7 +189,29 @@ void emit_tuple(TextBuffer *out, const ElementKind *kind)
                                       : "read_int");
     }
 
-    text_append(out, "    return tuple;\n}\n");
+    text_append(out, "    return tuple;\n}\n\n");
+
+    /* 64 bits do 1º campo com a mesma ordem: o radix ordena por eles e só os empates comparam */
+    text_appendf(out, "static inline uint64_t %s_prefix(%s tuple)\n{\n", prefix, type);
+
+    if (tags[0] == 't')
+    {
+        text_appendf(out, "    return %s_prefix(tuple.field_0);\n}\n", kind->fields[0]->suffix);
+    }
+    else if (tags[0] == 's')
+    {
+        text_append(out, "    return str_prefix(str_unpack(tuple.field_0));\n}\n");
+    }
+    else if (tags[0] == 'r')
+    {
+        /* real: negativo inverte todos os bits, positivo liga o de sinal (ordem de IEEE 754) */
+        text_append(out, "    uint64_t bits;\n    memcpy(&bits, &tuple.field_0, sizeof bits);\n"
+                         "    return bits ^ ((bits >> 63) ? ~0ULL : 1ULL << 63);\n}\n");
+    }
+    else
+    {
+        text_append(out, "    return (uint64_t)tuple.field_0 ^ (1ULL << 63);\n}\n");
+    }
 }
 
 /** Copia um arquivo do runtime embutido para a saída. */
@@ -219,9 +241,15 @@ void emit_array_template(TextBuffer *out, const ElementKind *kind)
                  kind->writer);
     text_appendf(out, "#define LESS(left, right) %s(left, right)\n", kind->less_than);
     text_appendf(out, "#define LOAD(stored) %s\n#define KIND %d\n", load_macro(kind), kind->kind);
+
+    if (kind->kind == 2)
+    {
+        text_appendf(out, "#define ORDER_KEY(item) %s_prefix(item)\n", kind->suffix);
+    }
+
     emit_text(out, rt_arr_h, rt_arr_h_len);
     text_append(out, "#undef ELEMENT\n#undef VALUE\n#undef ARRAY\n#undef FN\n#undef READ_ELEMENT\n"
-                     "#undef WRITE_ELEMENT\n#undef LESS\n#undef LOAD\n#undef KIND\n");
+                     "#undef WRITE_ELEMENT\n#undef LESS\n#undef LOAD\n#undef KIND\n#undef ORDER_KEY\n");
 }
 
 /** Escreve o template de uma estrutura (heap, fila, mapa ou grafo). */

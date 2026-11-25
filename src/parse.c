@@ -688,13 +688,51 @@ static Statement *parse_function(Token *token)
     return stmt;
 }
 
+/**
+ * Condição de if/while. Com parênteses opcionais, if (x) [a, b] = p leria [ como índice de (x):
+ * quando o ')' que fecha é seguido de '[', os parênteses são os do comando.
+ */
+static Expression *parse_condition(void)
+{
+    if (!at_token(PUNCT_LEFT_PAREN))
+    {
+        return parse_expression();
+    }
+
+    int depth = 0;
+    int close = position;
+
+    for (; close < tokens->count; close++)
+    {
+        TokenKind kind = tokens->items[close].kind;
+        depth += kind == PUNCT_LEFT_PAREN;
+        depth -= kind == PUNCT_RIGHT_PAREN;
+
+        if (depth == 0 || kind == TOKEN_NEWLINE || kind == TOKEN_EOF)
+        {
+            break;
+        }
+    }
+
+    if (depth != 0 || close + 1 >= tokens->count ||
+        tokens->items[close + 1].kind != PUNCT_LEFT_BRACKET)
+    {
+        return parse_expression();
+    }
+
+    position++;
+    Expression *condition = parse_expression();
+    expect_token(PUNCT_RIGHT_PAREN);
+    return condition;
+}
+
 /* se / senao se / senao: cada "senao se" vira um se dentro do senao anterior */
 static Statement *parse_if(Token *token)
 {
     Statement *stmt = new_statement(STMT_IF, token);
     Statement *last_if = stmt;
 
-    stmt->first = parse_expression();
+    stmt->first = parse_condition();
     parse_block(&stmt->body);
 
     /* o senao pode vir depois de '}' na mesma linha ou na linha seguinte */
@@ -712,7 +750,7 @@ static Statement *parse_if(Token *token)
         }
 
         Statement *else_if = new_statement(STMT_IF, else_token);
-        else_if->first = parse_expression();
+        else_if->first = parse_condition();
         parse_block(&else_if->body);
         PUSH(last_if->else_body, else_if);
         last_if = else_if;
@@ -1336,7 +1374,7 @@ static void parse_statement(StatementList *out)
     case KEYWORD_ENQUANTO:
         position++;
         stmt = new_statement(STMT_WHILE, token);
-        stmt->first = parse_expression();
+        stmt->first = parse_condition();
         parse_block(&stmt->body);
         PUSH(*out, stmt);
         return;
