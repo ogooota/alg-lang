@@ -41,39 +41,47 @@ no `ios::sync_with_stdio(false)` and no `long long` anywhere.
 ## Why alg
 
 - **Less to write.** Reading an array is `read(n, a[0..n])`. Printing is `write(a, b, v)`. Every integer is 64-bit.
-  Tuples, sorting, heaps, queues, maps and graphs are built in, and so are contest techniques: prefix sums,
-  binary search, gcd/lcm/powmod, a prime sieve, union-find, Fenwick tree, segment tree and sparse table.
+  Tuples, records (`type Edge { w: int; u: int; v: int }`), sorting, heaps, queues, maps, sets and graphs are
+  built in, and so are contest techniques: prefix sums, binary search, gcd/lcm/powmod, a prime sieve,
+  `count_primes(n)` up to 10¹¹, coordinate compression, union-find, Fenwick tree, segment tree and sparse table.
+  Comprehensions and quantifiers read like math: `{x * x for x in v if x > 0}`, `all(x > 0 for x in v)`.
 - **Fewer classic bugs.** `-7 % 2` is `1` (never negative), `INF + w` does not overflow, `x & 1 == 0` means what it says,
   recursion gets a 256 MB stack, undirected graphs add both edges, and the map uses a random hash seed per run.
 - **Fast.** Fast I/O, radix sort, a compact (CSR) graph layout, open-addressing maps, and a range analysis that stores each
   array in 1, 2, 4 or 8 bytes depending on the values it can hold.
 - **Safe while practicing, fast when submitting.** Without `-O`, an out-of-bounds index stops with the line number.
   With `-O`, the checks are gone. `--emit-c` prints a single C file you can submit to judges that accept C.
-- **Familiar if you come from C++.** `x++`, `x--`, `+=`, and optional parentheses: `if (x > 0)`, `while (i < n)`,
-  `for (i = 0; i < n; i++)` all work next to the shorter `for i=0 to n` and `for x in v`.
+- **Familiar if you come from C++.** `x++`, `x--`, `+=`, `&&`, `||`, `!`, and optional parentheses: `if (x > 0)`,
+  `while (i < n)`, `for (i = 0; i < n; i++)` all work next to the shorter `for i=0 to n` and `for x in v`.
+  `[d, u] = h.pop()` unpacks like `auto [d, u]`.
+- **Types when you want them.** Everything is inferred, but you can write `#decl a: {(int, int)}`,
+  `map {str: int}` or `fn f(v: {int}, k: int) -> int`, and the compiler checks it.
 - **Your language.** Keywords exist in English (`#lang en`) and Portuguese (`#lang pt`); more languages are planned.
 
 ## Speed
 
-alg with `-O` against C++ `-O2` (with `sync_with_stdio(false)`), same input, best of 5 runs. Lower is better.
+alg with `-O` against C++ `-O2` (with `sync_with_stdio(false)`), same input, best of 5 runs. Lower is better. Timings on
+a shared machine move by 10–30% between runs (sorting words went from 0.81× to 1.14× with the same alg binary), so
+measure on your own computer.
 
 | Problem | alg / C++ time |
 |---|---|
-| Dijkstra, 10⁵ vertices, 10⁶ edges | 0.36× |
-| BFS, 10⁶ vertices, 2·10⁶ edges | 0.45× |
-| sort 10⁶ integers | 0.46× |
-| prefix sums, 10⁶ queries | 0.50× |
-| 0/1 knapsack, 10⁸ operations | 0.57× |
-| count 10⁶ values with a map | 0.62× |
+| Dijkstra, 10⁵ vertices, 10⁶ edges | 0.24× |
+| BFS, 10⁶ vertices, 2·10⁶ edges | 0.42× |
+| sort 10⁶ integers | 0.32× |
+| prefix sums, 10⁶ queries | 0.34× |
+| 0/1 knapsack, 10⁸ operations | 0.68× |
+| count 10⁶ values with a map | 0.34× |
 | LCS 4000 × 4000 | 0.96× |
 | sieve up to 2·10⁷ | 0.99× |
-| recursive fib(38) | 1.01× |
-| union-find, 10⁶ operations | 0.50× |
-| Fenwick tree, 10⁶ updates and sums | 0.53× |
-| segment tree (min), 10⁶ updates and queries | 0.56× |
-| sparse table, 10⁶ range minimums | 0.57× |
-| sort 10⁶ words | 0.81× |
-| count 10⁶ words with a map | 0.84× |
+| recursive fib(38) | 1.02× |
+| union-find, 10⁶ operations | 0.30× |
+| Fenwick tree, 10⁶ updates and sums | 0.40× |
+| segment tree (min), 10⁶ updates and queries | 0.41× |
+| sparse table, 10⁶ range minimums | 0.47× |
+| sort 10⁶ words | 1.14× |
+| count 10⁶ words with a map | 0.35× |
+| `sieve(n)` built-in up to 2·10⁷ | 0.12× |
 
 Part of the gap is input speed. Against C++ with a hand-written fast reader, alg still comes out ahead on sorting (0.74×),
 Dijkstra (0.62×), BFS (0.52×) and maps (0.86×). Reproduce with `python3 bench/gen_inputs.py && python3 bench/run.py`.
@@ -132,5 +140,5 @@ make test                    # run the test suite
 
 ## Status
 
-alg is young. Sets and records are designed but not implemented yet. Error messages follow the
-program's `#lang` (English or Portuguese). Issues and ideas are welcome.
+alg is young. Error messages follow the program's `#lang` (English or Portuguese). Issues and ideas
+are welcome.
