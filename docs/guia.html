@@ -587,6 +587,35 @@ int main() {
         cout &lt;&lt; value &lt;&lt; ' ' &lt;&lt; times &lt;&lt; '\n';
 }</code></pre></figure></div>
 <ul class="notes"><li>A map is a hash table (fast like <code>unordered_map</code>) that iterates its keys in order (like <code>map</code>). You do not have to choose.</li><li>The hash seed changes on every run, so anti-hash tests built against <code>unordered_map</code> do not work here.</li></ul></section>
+<section class="problem" id="en-caesar"><div class="eyebrow">strings · O(length)</div><h3>Caesar cipher</h3><p>Read a shift <var>k</var> and a line of text; shift every lowercase letter <var>k</var> places, wrapping around the alphabet. Input <code>3 / hello, world</code> → <code>khoor, zruog</code>.</p><div class="compare">
+<figure><figcaption><strong>alg</strong><span>11 lines</span></figcaption><pre><code class="lang-alg">#lang en
+#decl line: str
+read(k)
+read_line(line)
+answer = ""
+for c in line {
+    if (c &gt;= 'a' &amp;&amp; c &lt;= 'z')
+        c = 'a' + (c - 'a' + k) % 26
+    answer.add(c)
+}
+write(answer)</code></pre></figure>
+<figure class="cpp"><figcaption><strong>C++</strong><span>15 lines</span></figcaption><pre><code class="lang-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    int k;
+    cin &gt;&gt; k;
+    string line;
+    getline(cin &gt;&gt; ws, line);
+    string answer;
+    for (char c : line) {
+        if (c &gt;= 'a' &amp;&amp; c &lt;= 'z')
+            c = 'a' + ((c - 'a' + k) % 26 + 26) % 26;
+        answer += c;
+    }
+    cout &lt;&lt; answer &lt;&lt; '\n';
+}</code></pre></figure></div>
+<ul class="notes"><li>A string is an array of characters: <code>for c in line</code>, <code>'a' + 1</code> and <code>answer.add(c)</code> work like on any array.</li><li><code>%</code> never returns a negative number, so a negative <var>k</var> needs no <code>+ 26</code> fix (the C++ version does).</li></ul></section>
 <section class="problem" id="en-bfs"><div class="eyebrow">graph · BFS · O(n + m)</div><h3>Fewest roads</h3><p>Cities 1..<var>n</var> and <var>m</var> two-way roads. What is the fewest number of roads from city 1 to city <var>n</var>? Input <code>5 5 / 1 2 / 2 3 / 1 4 / 4 5 / 3 5</code> → <code>2</code>.</p><div class="compare">
 <figure><figcaption><strong>alg</strong><span>24 lines</span></figcaption><pre><code class="lang-alg">#lang en
 #decl dist[n];
@@ -1064,6 +1093,35 @@ int main() {
         cout &lt;&lt; value &lt;&lt; ' ' &lt;&lt; times &lt;&lt; '\n';
 }</code></pre></figure></div>
 <ul class="notes"><li>O mapa é um hash (rápido como <code>unordered_map</code>) e percorre as chaves em ordem (como <code>map</code>). Você não precisa escolher.</li><li>A semente do hash muda a cada execução: entradas feitas para derrubar <code>unordered_map</code> não funcionam aqui.</li></ul></section>
+<section class="problem" id="pt-caesar"><div class="eyebrow">texto · O(tamanho)</div><h3>Cifra de César</h3><p>Leia um deslocamento <var>k</var> e uma linha de texto; ande <var>k</var> posições com cada letra minúscula, dando a volta no alfabeto. Entrada <code>3 / hello, world</code> → <code>khoor, zruog</code>.</p><div class="compare">
+<figure><figcaption><strong>alg</strong><span>11 linhas</span></figcaption><pre><code class="lang-alg">#lang pt
+#decl linha: texto
+ler(k)
+ler_linha(linha)
+resposta = ""
+para c em linha {
+    se (c &gt;= 'a' &amp;&amp; c &lt;= 'z')
+        c = 'a' + (c - 'a' + k) % 26
+    resposta.adicionar(c)
+}
+escrever(resposta)</code></pre></figure>
+<figure class="cpp"><figcaption><strong>C++</strong><span>15 linhas</span></figcaption><pre><code class="lang-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    int k;
+    cin &gt;&gt; k;
+    string line;
+    getline(cin &gt;&gt; ws, line);
+    string answer;
+    for (char c : line) {
+        if (c &gt;= 'a' &amp;&amp; c &lt;= 'z')
+            c = 'a' + ((c - 'a' + k) % 26 + 26) % 26;
+        answer += c;
+    }
+    cout &lt;&lt; answer &lt;&lt; '\n';
+}</code></pre></figure></div>
+<ul class="notes"><li>Texto é um vetor de caracteres: <code>para c em linha</code>, <code>'a' + 1</code> e <code>resposta.adicionar(c)</code> funcionam como em qualquer vetor.</li><li>O <code>%</code> nunca dá negativo, então <var>k</var> negativo não precisa do conserto <code>+ 26</code> (a versão em C++ precisa).</li></ul></section>
 <section class="problem" id="pt-bfs"><div class="eyebrow">grafo · BFS · O(n + m)</div><h3>Menor número de estradas</h3><p>Cidades 1..<var>n</var> e <var>m</var> estradas de mão dupla. Quantas estradas no mínimo da cidade 1 até a <var>n</var>? Entrada <code>5 5 / 1 2 / 2 3 / 1 4 / 4 5 / 3 5</code> → <code>2</code>.</p><div class="compare">
 <figure><figcaption><strong>alg</strong><span>24 linhas</span></figcaption><pre><code class="lang-alg">#lang pt
 #decl dist[n];
