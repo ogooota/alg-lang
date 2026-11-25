@@ -966,7 +966,7 @@ void gen_expression(TextBuffer *out, Expression *expr)
         for (int i = 0; i < expr->arguments.count; i++)
         {
             /* string no campo: cópia compacta, mudar a original depois não muda a tupla */
-            int is_text = tuple_element_kind(expr->type)->signature[i] == 's';
+            int is_text = tuple_element_kind(expr->type)->field_tags[i] == 's';
 
             text_append(out, i ? ", " : "");
             text_append(out, is_text ? "str_pack(" : "");

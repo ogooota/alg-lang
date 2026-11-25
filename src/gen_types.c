@@ -51,23 +51,45 @@ char *format_string(const char *format_text, const char *argument)
     return text;
 }
 
-/** Descrição C de um formato de tupla (registra a struct na primeira vez). */
+/** Descrição C de um formato de tupla (registra a struct na primeira vez; as de dentro antes). */
 const ElementKind *tuple_element_kind(Type *type)
 {
-    char signature[64] = "";
-    char snake[512] = "tuple";
-    char pascal[512] = "Tuple";
+    int count = type->field_count < 63 ? type->field_count : 63;
+    TextBuffer signature = {0};
+    TextBuffer snake = {0};
+    TextBuffer pascal = {0};
+    char tags[64] = "";
+    const ElementKind **fields = allocate_zeroed(sizeof *fields * (size_t)(count + 1));
 
-    for (int i = 0; i < type->field_count && i < 63; i++)
+    text_append(&snake, "tuple");
+    text_append(&pascal, "Tuple");
+
+    for (int i = 0; i < count; i++)
     {
-        TypeKind field_kind = resolve_unknown_type(type->fields[i])->kind;
+        Type *field = resolve_unknown_type(type->fields[i]);
 
-        signature[i] = field_kind == TYPE_REAL ? 'r' : field_kind == TYPE_STRING ? 's' : 'i';
-        strcat(snake, field_kind == TYPE_REAL ? "_real" : field_kind == TYPE_STRING ? "_str" : "_int");
-        strcat(pascal, field_kind == TYPE_REAL ? "Real" : field_kind == TYPE_STRING ? "Str" : "Int");
+        /* tupla dentro de tupla: o nome dela entre tuple_ e _end deixa cada formato único */
+        if (field->kind == TYPE_TUPLE)
+        {
+            fields[i] = tuple_element_kind(field);
+            tags[i] = 't';
+            text_appendf(&signature, "(%s)", fields[i]->signature);
+            text_appendf(&snake, "_%s_end", fields[i]->suffix);
+            text_appendf(&pascal, "%sEnd", fields[i]->pascal);
+            continue;
+        }
+
+        tags[i] = field->kind == TYPE_REAL ? 'r' : field->kind == TYPE_STRING ? 's' : 'i';
+        text_appendf(&signature, "%c", tags[i]);
+        text_append(&snake, field->kind == TYPE_REAL     ? "_real"
+                            : field->kind == TYPE_STRING ? "_str"
+                                                         : "_int");
+        text_append(&pascal, field->kind == TYPE_REAL     ? "Real"
+                             : field->kind == TYPE_STRING ? "Str"
+                                                          : "Int");
 
         /* campo string usa o runtime de strings (Str, packed_less...) */
-        if (field_kind == TYPE_STRING)
+        if (field->kind == TYPE_STRING)
         {
             element_used[ELEMENT_U8] = 1;
             strings_in_containers = 1;
@@ -76,21 +98,23 @@ const ElementKind *tuple_element_kind(Type *type)
 
     for (int i = 0; i < tuples.count; i++)
     {
-        if (!strcmp(tuples.items[i]->signature, signature))
+        if (!strcmp(tuples.items[i]->signature, signature.text))
         {
             return tuples.items[i];
         }
     }
 
     ElementKind *kind = allocate_zeroed(sizeof *kind);
-    kind->signature = duplicate_string(signature);
-    kind->suffix = duplicate_string(snake);
-    kind->pascal = duplicate_string(pascal);
+    kind->signature = signature.text;
+    kind->field_tags = duplicate_string(tags);
+    kind->fields = fields;
+    kind->suffix = snake.text;
+    kind->pascal = pascal.text;
     kind->c_type = kind->pascal;
     kind->value_type = kind->c_type;
-    kind->reader = format_string("%s_read", snake);
-    kind->writer = format_string("%s_write", snake);
-    kind->less_than = format_string("%s_less", snake);
+    kind->reader = format_string("%s_read", snake.text);
+    kind->writer = format_string("%s_write", snake.text);
+    kind->less_than = format_string("%s_less", snake.text);
     kind->loader = "";
     kind->kind = 2;
     PUSH(tuples, kind);

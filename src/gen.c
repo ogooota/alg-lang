@@ -44,7 +44,7 @@ int strings_in_containers;
 
 /* string em estrutura: guardada como Str (16 bytes), lida como ArrayU8 */
 const ElementKind STRING_ELEMENT = {"str",       "Str",         "Str",        "ArrayU8", "packed_read",
-                                    "str_write", "packed_less", "str_unpack", "",        3};
+                                    "str_write", "packed_less", "str_unpack", "",        3, NULL, NULL};
 
 /* vetores do #decl já garantidos no trecho que está sendo gerado */
 VariableSet ensured_lazy;
@@ -55,40 +55,55 @@ VariableSet ensured_lazy;
 const char *PRAGMAS = "#pragma GCC optimize(\"O3,unroll-loops\")\n"
                       "#pragma GCC target(\"avx2\")\n";
 
-/* C de cada tipo de campo de tupla ('i' inteiro, 'r' real, 's' string compacta) */
-static const char *field_c_type(char field)
+/* C de um campo de tupla ('i' inteiro, 'r' real, 's' string compacta, 't' outra tupla) */
+static const char *field_c_type(const ElementKind *kind, int i)
 {
-    return field == 'r' ? "double" : field == 's' ? "Str" : "int64_t";
+    char tag = kind->field_tags[i];
+    return tag == 'r' ? "double" : tag == 's' ? "Str" : tag == 't' ? kind->fields[i]->c_type : "int64_t";
 }
 
 /* comparações de um campo: string compara pelo prefixo antes de seguir o ponteiro */
-static void emit_field_less(TextBuffer *out, char field, int i)
+static void emit_field_less(TextBuffer *out, const ElementKind *kind, int i)
 {
-    text_appendf(out, field == 's' ? "packed_less(left.field_%d, right.field_%d)"
-                                   : "left.field_%d < right.field_%d",
-                 i, i);
+    char tag = kind->field_tags[i];
+
+    if (tag == 's' || tag == 't')
+    {
+        text_appendf(out, "%s_less(left.field_%d, right.field_%d)",
+                     tag == 's' ? "packed" : kind->fields[i]->suffix, i, i);
+        return;
+    }
+
+    text_appendf(out, "left.field_%d < right.field_%d", i, i);
 }
 
-static void emit_field_equal(TextBuffer *out, char field, int i)
+static void emit_field_equal(TextBuffer *out, const ElementKind *kind, int i)
 {
-    text_appendf(out, field == 's' ? "packed_equal(left.field_%d, right.field_%d)"
-                                   : "left.field_%d == right.field_%d",
-                 i, i);
+    char tag = kind->field_tags[i];
+
+    if (tag == 's' || tag == 't')
+    {
+        text_appendf(out, "%s_equal(left.field_%d, right.field_%d)",
+                     tag == 's' ? "packed" : kind->fields[i]->suffix, i, i);
+        return;
+    }
+
+    text_appendf(out, "left.field_%d == right.field_%d", i, i);
 }
 
 /* struct da tupla e suas funções: ordem, igualdade, hash, escrita, leitura */
 void emit_tuple(TextBuffer *out, const ElementKind *kind)
 {
-    const char *signature = kind->signature;
+    const char *tags = kind->field_tags;
     const char *type = kind->c_type;
     const char *prefix = kind->suffix;
-    int count = (int)strlen(signature);
+    int count = (int)strlen(tags);
 
     text_append(out, "\ntypedef struct\n{\n");
 
     for (int i = 0; i < count; i++)
     {
-        text_appendf(out, "    %s field_%d;\n", field_c_type(signature[i]), i);
+        text_appendf(out, "    %s field_%d;\n", field_c_type(kind, i), i);
     }
 
     text_appendf(out, "} %s;\n\n", type);
@@ -100,13 +115,13 @@ void emit_tuple(TextBuffer *out, const ElementKind *kind)
 
     for (int i = 0; i < count - 1; i++)
     {
-        emit_field_less(out, signature[i], i);
+        emit_field_less(out, kind, i);
         text_append(out, " || (");
-        emit_field_equal(out, signature[i], i);
+        emit_field_equal(out, kind, i);
         text_append(out, " && (");
     }
 
-    emit_field_less(out, signature[count - 1], count - 1);
+    emit_field_less(out, kind, count - 1);
 
     for (int i = 0; i < count - 1; i++)
     {
@@ -121,7 +136,7 @@ void emit_tuple(TextBuffer *out, const ElementKind *kind)
     for (int i = 0; i < count; i++)
     {
         text_append(out, " && ");
-        emit_field_equal(out, signature[i], i);
+        emit_field_equal(out, kind, i);
     }
 
     text_append(out, ";\n}\n\n");
@@ -131,10 +146,12 @@ void emit_tuple(TextBuffer *out, const ElementKind *kind)
 
     for (int i = 0; i < count; i++)
     {
-        text_appendf(out, "    hash = mix_bits(hash ^ %s(tuple.field_%d));\n",
-                     signature[i] == 'r'   ? "hash_real"
-                     : signature[i] == 's' ? "packed_hash"
-                                           : "hash_int",
+        text_appendf(out, "    hash = mix_bits(hash ^ %s%s(tuple.field_%d));\n",
+                     tags[i] == 't' ? kind->fields[i]->suffix : "",
+                     tags[i] == 'r'   ? "hash_real"
+                     : tags[i] == 's' ? "packed_hash"
+                     : tags[i] == 't' ? "_hash"
+                                      : "hash_int",
                      i);
     }
 
@@ -145,9 +162,16 @@ void emit_tuple(TextBuffer *out, const ElementKind *kind)
     for (int i = 0; i < count; i++)
     {
         text_append(out, i ? "    write_space();\n" : "");
-        text_appendf(out, signature[i] == 's' ? "    str_write(str_unpack(tuple.field_%d));\n"
-                          : signature[i] == 'r' ? "    write_real(tuple.field_%d);\n"
-                                                : "    write_int(tuple.field_%d);\n",
+
+        if (tags[i] == 't')
+        {
+            text_appendf(out, "    %s_write(tuple.field_%d);\n", kind->fields[i]->suffix, i);
+            continue;
+        }
+
+        text_appendf(out, tags[i] == 's'   ? "    str_write(str_unpack(tuple.field_%d));\n"
+                          : tags[i] == 'r' ? "    write_real(tuple.field_%d);\n"
+                                           : "    write_int(tuple.field_%d);\n",
                      i);
     }
 
@@ -157,10 +181,12 @@ void emit_tuple(TextBuffer *out, const ElementKind *kind)
 
     for (int i = 0; i < count; i++)
     {
-        text_appendf(out, "    tuple.field_%d = %s(line);\n", i,
-                     signature[i] == 'r'   ? "read_real"
-                     : signature[i] == 's' ? "packed_read"
-                                           : "read_int");
+        text_appendf(out, "    tuple.field_%d = %s%s(line);\n", i,
+                     tags[i] == 't' ? kind->fields[i]->suffix : "",
+                     tags[i] == 'r'   ? "read_real"
+                     : tags[i] == 's' ? "packed_read"
+                     : tags[i] == 't' ? "_read"
+                                      : "read_int");
     }
 
     text_append(out, "    return tuple;\n}\n");

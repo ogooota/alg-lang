@@ -501,9 +501,12 @@ Type *check_expression(Expression *expr)
             Expression *field = expr->arguments.items[i];
 
             /* string num campo fica guardada compacta (Str), como nas estruturas */
-            type->fields[i] = is_string(resolve_unknown(check_expression(field)))
-                                  ? new_type(TYPE_STRING)
-                                  : owned_type(check_number(field));
+            Type *field_type = resolve_unknown(check_expression(field));
+
+            /* tupla dentro de tupla é guardada por valor, como os outros campos */
+            type->fields[i] = is_string(field_type)             ? new_type(TYPE_STRING)
+                              : field_type->kind == TYPE_TUPLE ? owned_type(field_type)
+                                                               : owned_type(check_number(field));
         }
 
         return expr->type = type;

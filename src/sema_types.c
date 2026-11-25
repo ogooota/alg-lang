@@ -152,7 +152,11 @@ int same_tuple(Type *left_type, Type *right_type)
 
     for (int i = 0; i < left_type->field_count; i++)
     {
-        if (left_type->fields[i]->kind != right_type->fields[i]->kind)
+        Type *left_field = left_type->fields[i];
+        Type *right_field = right_type->fields[i];
+
+        if (left_field->kind != right_field->kind ||
+            (left_field->kind == TYPE_TUPLE && !same_tuple(left_field, right_field)))
         {
             return 0;
         }
@@ -447,11 +451,6 @@ Type *type_from_syntax(TypeSyntax *syntax, int cell)
 
         for (int i = 0; i < type->field_count; i++)
         {
-            if (syntax->fields.items[i]->shape == TYPE_TUPLE)
-            {
-                fail_at(syntax->line, syntax->column, "tupla dentro de tupla ainda não existe");
-            }
-
             type->fields[i] = scalar_from_syntax(syntax->fields.items[i], "campo de tupla");
         }
 

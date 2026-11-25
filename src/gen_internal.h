@@ -6,7 +6,7 @@
 
 /* ---------- tipo de elemento (vetor, heap, fila, mapa, grafo) ---------- */
 
-typedef struct
+typedef struct ElementKind
 {
     const char *suffix;     /* prefixo das funções: array_<suffix>_push */
     const char *pascal;     /* nome do tipo: Array<Pascal> */
@@ -16,8 +16,10 @@ typedef struct
     const char *writer;     /* escrita de um elemento */
     const char *less_than;  /* ordem: LESS_THAN ou tuple_<campos>_less */
     const char *loader;     /* guardado → valor: "" ou conversão */
-    const char *signature;  /* tupla: tipos dos campos ("ir" = int, real) */
-    int kind;               /* 0 inteiro, 1 real, 2 tupla */
+    const char *signature;  /* tupla: tipos dos campos, aninhados entre parênteses ("i(ir)") */
+    int kind;               /* 0 inteiro, 1 real, 2 tupla, 3 string */
+    const char *field_tags; /* tupla: um por campo, 'i' int, 'r' real, 's' string, 't' tupla */
+    const struct ElementKind **fields; /* tupla: a descrição de cada campo que é tupla */
 } ElementKind;
 
 typedef VEC(ElementKind *) ElementKindList;

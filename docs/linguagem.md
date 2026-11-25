@@ -56,7 +56,7 @@ make test                     # roda tests/cases/*.alg
 | Operações de conjunto | `uniao`, `inter`, `menos` (o `em` já funciona com mapa) | ⏳ |
 | Quantificadores | `para todo`, `existe` / `para algum` | ⏳ |
 | `INF` | constante 10¹⁸ (folga para `INF + peso`); em vetor `: int32` vira um valor especial e volta a ser 10¹⁸ na leitura | ✅ |
-| Tuplas | valor com parênteses `(d, v)`; campo com `p[0]`, `p[1]` (número fixo; também para mudar: `item[i][0] += 1`); campos inteiros, reais ou strings (`(nota, nome)` ordena por nota e desempata pelo nome); comparação lexicográfica; desmontar usa colchetes, como o `auto [a, b]` do C++: `[a, b] = p`, `[a, b] = (b, a)` (troca), `para [a, b] em v` | ✅ |
+| Tuplas | valor com parênteses `(d, v)`; campo com `p[0]`, `p[1]` (número fixo; também para mudar: `item[i][0] += 1`); campos inteiros, reais, strings ou outras tuplas (`(nota, nome)` ordena por nota e desempata pelo nome; `(1, (2, "ab"))` e `p[1][0]`); comparação lexicográfica; desmontar usa colchetes, como o `auto [a, b]` do C++: `[a, b] = p`, `[a, b] = (b, a)` (troca), `para [a, b] em v` | ✅ |
 | Ordenar | `ordenar(v)`, `ordenar(v[i..j])`, `ordenar(v, maior)`; tuplas em ordem lexicográfica | ✅ |
 | Mapa | `m = mapa {}`, `m[k]` (ausente vale 0), `k em m`, `m.remover(k)`, `para [k, x] em m` (chaves em ordem) | ✅ |
 | Heap | `heap()` (menor sai primeiro), `heap(maior)`; `inserir`, `remover`, `topo` | ✅ |
