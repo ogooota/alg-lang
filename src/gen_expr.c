@@ -253,8 +253,37 @@ void gen_binary(TextBuffer *out, Expression *expr)
  * Laço de um gerador. Abre o laço e declara a variável;
  * quem chama escreve o corpo e fecha com "}".
  */
+/* filtro do gerador (if cond): pula o valor */
+static void gen_generator_filter(TextBuffer *out, Expression *generator)
+{
+    if (generator->arguments.count)
+    {
+        text_append(out, "if (!(");
+        gen_expression(out, generator->arguments.items[0]);
+        text_append(out, ")) continue; ");
+    }
+}
+
 void gen_generator_open(TextBuffer *out, Expression *generator, int temp_id)
 {
+    if (generator->third->type->kind == TYPE_MAP)
+    {
+        Type *map_type = generator->third->type;
+        const char *c_name = template_name(map_type);
+
+        text_appendf(out, "%s_Entries _a%d = %s_entries(", c_name, temp_id, c_name);
+        gen_expression(out, generator->third);
+        text_appendf(out, "); for (int64_t _k%d = 0; _k%d < _a%d.length; _k%d++) { ", temp_id,
+                     temp_id, temp_id, temp_id);
+        emit_c_type(out, generator->variable->type);
+        text_append(out, " ");
+        emit_identifier(out, "v_", generator->text);
+        text_appendf(out, " = %s(_a%d.data[_k%d].key); ",
+                     cell_element_kind(map_type->element)->loader, temp_id, temp_id);
+        gen_generator_filter(out, generator);
+        return;
+    }
+
     if (generator->second)
     {
         text_append(out, "for (int64_t ");
@@ -268,6 +297,7 @@ void gen_generator_open(TextBuffer *out, Expression *generator, int temp_id)
         text_appendf(out, " %s _h%d; ", generator->inclusive ? "<=" : "<", temp_id);
         emit_identifier(out, "v_", generator->text);
         text_append(out, "++) { ");
+        gen_generator_filter(out, generator);
         return;
     }
 
@@ -290,6 +320,8 @@ void gen_generator_open(TextBuffer *out, Expression *generator, int temp_id)
         text_appendf(out, " = array_%s_row(_a%d, _k%d, %d); ", array_suffix(iterable_type), temp_id,
                      temp_id, generator->line);
     }
+
+    gen_generator_filter(out, generator);
 }
 
 /** Escreve soma/min/max de vetor, de vários valores ou de um gerador. */
@@ -905,6 +937,20 @@ void gen_expression(TextBuffer *out, Expression *expr)
         return;
 
     case EXPR_UNARY:
+        if (expr->operation == KEYWORD_TODO || expr->operation == KEYWORD_EXISTE)
+        {
+            /* all: começa 1 e cai no primeiro falso; exists: começa 0 e sobe no primeiro verdadeiro */
+            int temp_id = temp_counter++;
+            int is_all = expr->operation == KEYWORD_TODO;
+
+            text_appendf(out, "({ int64_t _q%d = %d; ", temp_id, is_all);
+            gen_generator_open(out, expr->first, temp_id);
+            text_appendf(out, "if (%s(", is_all ? "!" : "");
+            gen_expression(out, expr->first->first);
+            text_appendf(out, ")) { _q%d = %d; break; } } _q%d; })", temp_id, !is_all, temp_id);
+            return;
+        }
+
         text_append(out, expr->operation == PUNCT_MINUS   ? "(-("
                          : expr->operation == PUNCT_TILDE ? "(~("
                                                           : "(!(");
@@ -965,6 +1011,21 @@ void gen_expression(TextBuffer *out, Expression *expr)
         return;
 
     case EXPR_VECTOR:
+        if (expr->arguments.count == 1 && expr->arguments.items[0]->kind == EXPR_GENERATOR)
+        {
+            Expression *generator = expr->arguments.items[0];
+            int temp_id = temp_counter++;
+            const char *suffix = array_suffix(expr->type);
+
+            text_appendf(out, "({ Array%s _v%d = array_%s_lit(0, NULL); ", array_pascal(expr->type),
+                         temp_id, suffix);
+            gen_generator_open(out, generator, temp_id);
+            text_appendf(out, "array_%s_push(&_v%d, ", suffix, temp_id);
+            gen_stored_value(out, expr->type->element, generator->first);
+            text_appendf(out, ", %d); } _v%d; })", expr->line, temp_id);
+            return;
+        }
+
         if (!expr->arguments.count)
         {
             text_appendf(out, "array_%s_lit(0, NULL)", array_suffix(expr->type));
@@ -1024,9 +1085,17 @@ void gen_expression(TextBuffer *out, Expression *expr)
 
             for (int i = 0; i < expr->arguments.count; i++)
             {
+                Expression *item = expr->arguments.items[i];
+                int is_generator = item->kind == EXPR_GENERATOR;
+
+                if (is_generator)
+                {
+                    gen_generator_open(out, item, temp_counter++);
+                }
+
                 text_appendf(out, "*%s_ref(_s%d, ", c_name, temp_id);
-                gen_expression(out, expr->arguments.items[i]);
-                text_append(out, ") = 1; ");
+                gen_expression(out, is_generator ? item->first : item);
+                text_append(out, is_generator ? ") = 1; } " : ") = 1; ");
             }
 
             text_appendf(out, "_s%d; })", temp_id);

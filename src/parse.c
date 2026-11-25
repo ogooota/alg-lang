@@ -149,6 +149,12 @@ static Expression *parse_generator(Expression *body)
         parse_range_tail(&generator->second, &generator->third, &generator->inclusive);
     }
 
+    /* filtro opcional: soma(x for x in v if x > 0); a condição fica em arguments[0] */
+    if (accept_token(KEYWORD_SE))
+    {
+        PUSH(generator->arguments, parse_expression());
+    }
+
     return generator;
 }
 
@@ -258,6 +264,13 @@ static Expression *parse_primary(void)
             PUSH(expr->arguments, parse_expression());
             skip_newlines();
 
+            /* {x * x for x in v if x > 0}: compreensão, o vetor guarda um gerador */
+            if (expr->arguments.count == 1 && at_token(KEYWORD_PARA))
+            {
+                expr->arguments.items[0] = parse_generator(expr->arguments.items[0]);
+                break;
+            }
+
             if (!accept_token(PUNCT_COMMA))
             {
                 break;
@@ -298,14 +311,38 @@ static Expression *parse_primary(void)
         set->operation = KEYWORD_CONJ;
         expect_token(PUNCT_LEFT_BRACE);
         parse_expression_list(&set->arguments, PUNCT_RIGHT_BRACE);
+
+        /* set {x % 7 for x in v}: compreensão de conjunto */
+        if (set->arguments.count == 1 && at_token(KEYWORD_PARA))
+        {
+            set->arguments.items[0] = parse_generator(set->arguments.items[0]);
+        }
+
         expect_token(PUNCT_RIGHT_BRACE);
         return set;
     }
 
+    /* all(cond for x in v), exists(...) / some(...): param no primeiro que decide */
     case KEYWORD_TODO:
     case KEYWORD_EXISTE:
     case KEYWORD_ALGUM:
-        fail_unimplemented(token);
+    {
+        position++;
+        expr = new_expression(EXPR_UNARY, token);
+        expr->operation = token->kind == KEYWORD_TODO ? KEYWORD_TODO : KEYWORD_EXISTE;
+        expect_token(PUNCT_LEFT_PAREN);
+        Expression *condition = parse_expression();
+
+        if (!at_token(KEYWORD_PARA))
+        {
+            fail_at(current_token()->line, current_token()->column,
+                    "%s recebe um gerador: %s(x > 0 para x em v)", token->text, token->text);
+        }
+
+        expr->first = parse_generator(condition);
+        expect_token(PUNCT_RIGHT_PAREN);
+        return expr;
+    }
 
     default:
         fail_at(token->line, token->column, "esperava uma expressão, encontrei '%s'",

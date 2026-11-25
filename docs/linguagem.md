@@ -53,9 +53,9 @@ make test                     # roda tests/cases/*.alg
 | Unicode | `≤ ≥ ≠ ← ∈` como sinônimos opcionais | ✅ |
 | Texto (strings) | seção "Texto" abaixo | ✅ |
 | Conjunto | `conj {}` / `conj {1, 2}` (en: `set`); `s.adicionar(x)`, `s.remover(x)`, `x em s`, `s.tam()`, `para x em s` (em ordem); tipo `conj {int}`. Por dentro é o mesmo hash do mapa, só com as chaves (busca O(1), percorrer em ordem custa uma ordenação radix) | ✅ |
-| Compreensão | `{x em v se x > 0}` vetor; `conj {...}` conjunto | ⏳ |
+| Compreensão | `{x * x para x em v se x > 0}` cria vetor, `conj {x % 7 para x em v}` cria conjunto; o gerador percorre faixa (`i=0 ate n`), vetor, conjunto ou mapa, e o `se` filtra (também em `soma`, `min`, `max`: `soma(x para x em v se x > 0)`) | ✅ |
 | Operações de conjunto | `a uniao b`, `a inter b`, `a menos b` (en: `union`, `inter`, `minus`) criam um conjunto novo; `inter` liga como `*`, `uniao` e `menos` como `+` | ✅ |
-| Quantificadores | `para todo`, `existe` / `para algum` | ⏳ |
+| Quantificadores | `todo(x > 0 para x em v)`, `existe(x > 7 para x em v)` (`algum` é sinônimo; en: `all`, `exists`, `some`); param no primeiro valor que decide | ✅ |
 | `INF` | constante 10¹⁸ (folga para `INF + peso`); em vetor `: int32` vira um valor especial e volta a ser 10¹⁸ na leitura | ✅ |
 | Tuplas | valor com parênteses `(d, v)`; campo com `p[0]`, `p[1]` (número fixo; também para mudar: `item[i][0] += 1`); campos inteiros, reais, strings ou outras tuplas (`(nota, nome)` ordena por nota e desempata pelo nome; `(1, (2, "ab"))` e `p[1][0]`); comparação lexicográfica; desmontar usa colchetes, como o `auto [a, b]` do C++: `[a, b] = p`, `[a, b] = (b, a)` (troca), `para [a, b] em v` | ✅ |
 | Ordenar | `ordenar(v)`, `ordenar(v[i..j])`, `ordenar(v, maior)`; tuplas em ordem lexicográfica | ✅ |
@@ -221,12 +221,12 @@ escrever(total)
 | `fn` | `fn` | | `remover_ultimo` | `pop` |
 | `ret` | `ret` | | `int` / `int32` | `int` / `int32` |
 | `pare` | `break` | | `real` | `real` |
-| `continue` | `continue` | | `todo` ⏳ | `all` |
+| `continue` | `continue` | | `todo` | `all` |
 | `ordenar` / `maior` | `sort` / `greater` | | `heap` / `inserir` / `remover` / `topo` | `heap` / `push` / `pop` / `top` |
 | `fila` / `enfileirar` / `desenfileirar` / `frente` | `queue` / `push` / `pop` / `front` | | `grafo` / `dirigido` / `aresta` / `vizinhos` | `graph` / `directed` / `edge` / `neighbors` |
 | `mapa` / `remover` | `map` / `remove` | | `INF` | `INF` |
-| `e` / `ou` / `nao` | `and` / `or` / `not` | | `existe` ⏳ | `exists` |
-| `verdadeiro` / `falso` | `true` / `false` | | `algum` ⏳ | `some` |
+| `e` / `ou` / `nao` | `and` / `or` / `not` | | `existe` | `exists` |
+| `verdadeiro` / `falso` | `true` / `false` | | `algum` | `some` |
 | `uniao` | `union` | | `conj` | `set` |
 | `inter` | `inter` | | `tipo` ⏳ | `type` |
 | `menos` | `minus` | | | |

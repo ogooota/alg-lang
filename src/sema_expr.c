@@ -39,8 +39,11 @@ Type *check_array(Expression *expr)
     return type;
 }
 
-/* gerador: soma(corpo para i=0 ate n) / soma(corpo para x em v) */
-Type *check_generator(Expression *generator)
+/*
+ * gerador: soma(corpo para i=0 ate n) / soma(corpo para x em v) / {corpo para x em s se cond};
+ * any_body: o corpo pode ser de qualquer tipo (compreensão), senão é número
+ */
+Type *check_generator(Expression *generator, int any_body)
 {
     Scope scope = {.parent = current_scope};
     current_scope = &scope;
@@ -52,16 +55,28 @@ Type *check_generator(Expression *generator)
         check_int(generator->third);
         value_type = &INT_TYPE;
     }
+    else if (check_expression(generator->third)->kind == TYPE_MAP)
+    {
+        /* conjunto ou mapa: as chaves, em ordem */
+        value_type = owned_type(value_of_cell(resolve_unknown(generator->third->type->element)));
+    }
     else
     {
         Type *iterable_type = check_array(generator->third);
         value_type = iterable_type->dimension_count == 1
-                         ? owned_type(iterable_type->element)
+                         ? owned_type(value_of_cell(iterable_type->element))
                          : array_type(iterable_type->element, iterable_type->dimension_count - 1);
     }
 
     generator->variable = declare_in_scope(&scope, generator->text, value_type, generator->line);
-    Type *type = check_number(generator->first);
+
+    if (generator->arguments.count)
+    {
+        check_number(generator->arguments.items[0]);
+    }
+
+    Type *type = any_body ? resolve_unknown(check_expression(generator->first))
+                          : check_number(generator->first);
     current_scope = scope.parent;
     return generator->type = type;
 }
@@ -82,7 +97,7 @@ Type *check_reduce(Expression *expr, Builtin builtin)
 
         if (argument->kind == EXPR_GENERATOR)
         {
-            return check_generator(argument);
+            return check_generator(argument, 0);
         }
 
         Type *type = check_array(argument);
@@ -560,7 +575,9 @@ Type *check_expression(Expression *expr)
             for (int i = 0; i < expr->arguments.count; i++)
             {
                 Expression *item = expr->arguments.items[i];
-                store_in_cell(type->element, check_expression(item), item);
+                Type *item_type = item->kind == EXPR_GENERATOR ? check_generator(item, 1)
+                                                               : check_expression(item);
+                store_in_cell(type->element, item_type, item->kind == EXPR_GENERATOR ? item->first : item);
             }
         }
 
@@ -579,6 +596,12 @@ Type *check_expression(Expression *expr)
         if (expr->operation == KEYWORD_NAO)
         {
             check_number(expr->first);
+            return expr->type = &INT_TYPE;
+        }
+
+        if (expr->operation == KEYWORD_TODO || expr->operation == KEYWORD_EXISTE)
+        {
+            check_generator(expr->first, 0);
             return expr->type = &INT_TYPE;
         }
 
@@ -647,6 +670,13 @@ Type *check_expression(Expression *expr)
     case EXPR_VECTOR:
     {
         Type *cell = new_type(TYPE_UNKNOWN);
+
+        if (expr->arguments.count == 1 && expr->arguments.items[0]->kind == EXPR_GENERATOR)
+        {
+            Expression *generator = expr->arguments.items[0];
+            store_in_cell(cell, check_generator(generator, 1), generator->first);
+            return expr->type = array_type(cell, 1);
+        }
 
         for (int i = 0; i < expr->arguments.count; i++)
         {

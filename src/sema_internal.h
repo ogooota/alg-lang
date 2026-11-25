@@ -63,7 +63,7 @@ Statement *clone_statement(Statement *stmt);
 Type *check_int(Expression *expr);
 Type *check_number(Expression *expr);
 Type *check_array(Expression *expr);
-Type *check_generator(Expression *generator);
+Type *check_generator(Expression *generator, int any_body);
 Type *check_reduce(Expression *expr, Builtin builtin);
 int cells_compatible(Type *left_type, Type *right_type);
 int same_signature(Type *left_type, Type *right_type);

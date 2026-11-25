@@ -375,7 +375,8 @@ static Range expression_range(Expression *expr)
         return expr->first->type->kind == TYPE_ARRAY ? cell_range(expr->type) : FULL_RANGE;
 
     case EXPR_UNARY:
-        if (expr->operation == KEYWORD_NAO)
+        if (expr->operation == KEYWORD_NAO || expr->operation == KEYWORD_TODO ||
+            expr->operation == KEYWORD_EXISTE)
         {
             return BOOL_RANGE;
         }

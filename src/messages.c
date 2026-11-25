@@ -283,6 +283,8 @@ static const char *const MESSAGES[][2] = {
      "a map stores with m[k] = value; add is for arrays and sets"},
     {"conjunto",
      "set"},
+    {"%s recebe um gerador: %s(x > 0 para x em v)",
+     "%s takes a generator: %s(x > 0 for x in v)"},
 };
 
 /** O texto no idioma do programa (o português é a chave; sem tradução, fica o original). */
