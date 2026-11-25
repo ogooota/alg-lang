@@ -559,6 +559,38 @@ static TypeSyntax *parse_type(void)
 
     Builtin builtin = builtin_of(expect_token(TOKEN_NAME)->text, lang);
 
+    /* heap {T}, heap(greater) {T}, queue {T}, graph, graph(directed): como o literal */
+    if (builtin == BUILTIN_HEAP || builtin == BUILTIN_FILA || builtin == BUILTIN_GRAFO)
+    {
+        syntax->shape = builtin == BUILTIN_HEAP ? TYPE_HEAP
+                        : builtin == BUILTIN_FILA ? TYPE_QUEUE
+                                                  : TYPE_GRAPH;
+
+        if (builtin != BUILTIN_FILA && accept_token(PUNCT_LEFT_PAREN))
+        {
+            Token *word = expect_token(TOKEN_NAME);
+            Builtin expected = builtin == BUILTIN_HEAP ? BUILTIN_MAIOR : BUILTIN_DIRIGIDO;
+
+            if (builtin_of(word->text, lang) != expected)
+            {
+                fail_at(word->line, word->column, "esperava '%s'",
+                        builtin == BUILTIN_HEAP ? "maior/greater" : "dirigido/directed");
+            }
+
+            syntax->option = 1;
+            expect_token(PUNCT_RIGHT_PAREN);
+        }
+
+        if (builtin != BUILTIN_GRAFO)
+        {
+            expect_token(PUNCT_LEFT_BRACE);
+            syntax->element = parse_type();
+            expect_token(PUNCT_RIGHT_BRACE);
+        }
+
+        return syntax;
+    }
+
     if (builtin == BUILTIN_MAPA)
     {
         syntax->shape = TYPE_MAP;
@@ -574,7 +606,8 @@ static TypeSyntax *parse_type(void)
         builtin != BUILTIN_TEXTO)
     {
         fail_at(token->line, token->column,
-                "tipo desconhecido '%s' (use int, int32, real, str, {T}, (T, U) ou map {K: V})",
+                "tipo desconhecido '%s' (use int, real, str, {T}, (T, U), map {K: V}, heap {T}, "
+                "queue {T} ou graph)",
                 token->text);
     }
 

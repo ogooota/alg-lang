@@ -315,12 +315,13 @@ void gen_statement(TextBuffer *out, Statement *stmt, int depth)
 
     case STMT_DECL:
 
-        /* #decl m: map {K: V} já nasce um mapa vazio, como m = map {} */
+        /* #decl m: map {K: V} (ou heap/queue) já nasce vazio, como m = map {} */
         for (int i = 0; i < stmt->declarations.count; i++)
         {
             Variable *variable = stmt->declarations.items[i].variable;
 
-            if (variable && variable->type->kind == TYPE_MAP)
+            if (variable && (variable->type->kind == TYPE_MAP || variable->type->kind == TYPE_HEAP ||
+                             variable->type->kind == TYPE_QUEUE))
             {
                 indent(out, depth);
                 gen_variable(out, variable, stmt->line);

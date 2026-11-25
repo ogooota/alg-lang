@@ -403,7 +403,8 @@ void store_in_cell(Type *cell, Type *type, Expression *location)
 /** Tipo de campo de tupla ou de chave/valor de mapa escrito: int, real, int32, str ou tupla. */
 static Type *scalar_from_syntax(TypeSyntax *syntax, const char *where)
 {
-    if (syntax->shape == TYPE_ARRAY || syntax->shape == TYPE_MAP)
+    if (syntax->shape != TYPE_INT && syntax->shape != TYPE_REAL && syntax->shape != TYPE_STRING &&
+        syntax->shape != TYPE_TUPLE)
     {
         fail_at(syntax->line, syntax->column, "%s guarda int, real, str ou tupla", where);
     }
@@ -465,6 +466,26 @@ Type *type_from_syntax(TypeSyntax *syntax, int cell)
         type->value = new_structure_cell();
         fill_cell(type->element, scalar_from_syntax(syntax->element, "chave de mapa"));
         fill_cell(type->value, scalar_from_syntax(syntax->value, "valor de mapa"));
+        return type;
+    }
+
+    case TYPE_HEAP:
+    case TYPE_QUEUE:
+    case TYPE_GRAPH:
+    {
+        Type *type = new_type(syntax->shape);
+
+        type->element = new_structure_cell();
+        type->descending = syntax->shape == TYPE_HEAP && syntax->option;
+        type->directed = syntax->shape == TYPE_GRAPH && syntax->option;
+
+        if (syntax->element)
+        {
+            fill_cell(type->element,
+                      scalar_from_syntax(syntax->element,
+                                         syntax->shape == TYPE_HEAP ? "heap" : "fila"));
+        }
+
         return type;
     }
 

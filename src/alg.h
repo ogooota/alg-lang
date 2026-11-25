@@ -268,8 +268,10 @@ typedef struct TypeSyntax TypeSyntax;
 
 struct TypeSyntax
 {
-    TypeKind shape; /* TYPE_INT, TYPE_REAL, TYPE_STRING, TYPE_ARRAY, TYPE_TUPLE ou TYPE_MAP */
+    TypeKind shape; /* TYPE_INT, TYPE_REAL, TYPE_STRING, TYPE_ARRAY, TYPE_TUPLE, TYPE_MAP, TYPE_HEAP,
+                       TYPE_QUEUE ou TYPE_GRAPH */
     int is_int32;
+    int option; /* heap(greater): o maior sai primeiro; graph(directed): dirigido */
     TypeSyntax *element; /* vetor: elemento; mapa: chave */
     TypeSyntax *value;   /* mapa: valor */
     VEC(TypeSyntax *) fields;

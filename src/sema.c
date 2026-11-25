@@ -441,7 +441,17 @@ void check_statement(Statement *stmt, int top, int *seen_code)
 
             TypeSyntax *declared = declaration->declared_type;
             int dimension_count = declaration->dimensions.count;
-            int is_container = declared && (declared->shape == TYPE_ARRAY || declared->shape == TYPE_MAP);
+            int is_container = declared && (declared->shape == TYPE_ARRAY || declared->shape == TYPE_MAP ||
+                                            declared->shape == TYPE_HEAP ||
+                                            declared->shape == TYPE_QUEUE ||
+                                            declared->shape == TYPE_GRAPH);
+
+            if (declared && declared->shape == TYPE_GRAPH)
+            {
+                fail_at(declaration->line, declaration->column,
+                        "grafo precisa do número de vértices: g = graph(n) (o tipo graph serve para "
+                        "parâmetros)");
+            }
 
             if (is_container && dimension_count)
             {
