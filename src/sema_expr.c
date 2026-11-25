@@ -611,7 +611,7 @@ Type *check_expression(Expression *expr)
     {
         Type *type = check_expression(expr->first);
 
-        if (type->kind == TYPE_MAP)
+        if (type->kind == TYPE_MAP && expr->second)
         {
             if (type->is_set)
             {
@@ -620,6 +620,33 @@ Type *check_expression(Expression *expr)
 
             store_in_cell(type->element, check_expression(expr->second), expr->second);
             return expr->type = value_of_cell(type->value);
+        }
+
+        /* e.w: o nome vira a posição do campo no registro */
+        if (!expr->second)
+        {
+            int index = -1;
+
+            for (int i = 0; type->kind == TYPE_TUPLE && type->record &&
+                            i < type->record->field_names.count;
+                 i++)
+            {
+                if (!strcmp(type->record->field_names.items[i], expr->text))
+                {
+                    index = i;
+                }
+            }
+
+            if (index < 0)
+            {
+                FAIL_AT_NODE(expr, "%s não tem o campo '%s'", type_name(type), expr->text);
+            }
+
+            expr->second = allocate_zeroed(sizeof *expr->second);
+            expr->second->kind = EXPR_INT;
+            expr->second->int_value = index;
+            expr->second->line = expr->line;
+            expr->second->column = expr->column;
         }
 
         /* p[0], p[1]: o índice é um número fixo, porque cada campo pode ter um tipo */
@@ -930,6 +957,26 @@ Type *check_expression(Expression *expr)
         }
 
         Function *function = find_function(expr->text);
+        Record *record = function ? NULL : find_record(expr->text);
+
+        /* Edge(1, 2, 5): constrói o registro (vira uma tupla com os tipos dele) */
+        if (record)
+        {
+            Type *type = record_type(record);
+
+            check_argument_count(expr, type->field_count, type->field_count);
+
+            for (int i = 0; i < type->field_count; i++)
+            {
+                Expression *argument = expr->arguments.items[i];
+                Type *field = value_of_cell(type->fields[i]);
+
+                unify_types(field, resolve_unknown(check_expression(argument)), argument);
+            }
+
+            expr->kind = EXPR_TUPLE;
+            return expr->type = type;
+        }
 
         if (!function)
         {

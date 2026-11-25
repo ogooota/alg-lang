@@ -382,6 +382,17 @@ static Expression *parse_postfix(void)
         else if (accept_token(PUNCT_DOT))
         {
             Token *name_token = expect_token(TOKEN_NAME);
+
+            /* e.w sem parênteses: campo de registro (a sema acha a posição pelo nome) */
+            if (!at_token(PUNCT_LEFT_PAREN))
+            {
+                Expression *field = new_expression(EXPR_INDEX, name_token);
+                field->first = expr;
+                field->text = name_token->text;
+                expr = field;
+                continue;
+            }
+
             Expression *method_call = new_expression(EXPR_METHOD, name_token);
 
             method_call->first = expr;
@@ -565,6 +576,23 @@ static void parse_block(StatementList *out)
 }
 
 /* nome[dim]...[: tipo] */
+/* registros declarados até aqui (type Nome { ... }), na ordem do arquivo */
+static VEC(Record) records;
+
+/** O registro com esse nome, ou NULL. */
+Record *find_record(const char *name)
+{
+    for (int i = 0; i < records.count; i++)
+    {
+        if (!strcmp(records.items[i].name, name))
+        {
+            return &records.items[i];
+        }
+    }
+
+    return NULL;
+}
+
 /** Tipo escrito: int, real, int32, str, {T}, (T, U, ...) ou map {K: V}. */
 static TypeSyntax *parse_type(void)
 {
@@ -611,7 +639,18 @@ static TypeSyntax *parse_type(void)
         return syntax;
     }
 
-    Builtin builtin = builtin_of(expect_token(TOKEN_NAME)->text, lang);
+    Token *name_token = expect_token(TOKEN_NAME);
+    Record *record = find_record(name_token->text);
+
+    /* nome de registro: a tupla com os campos dele */
+    if (record)
+    {
+        syntax->shape = TYPE_TUPLE;
+        syntax->record = record;
+        return syntax;
+    }
+
+    Builtin builtin = builtin_of(name_token->text, lang);
 
     /* heap {T}, heap(greater) {T}, queue {T}, graph, graph(directed): como o literal */
     if (builtin == BUILTIN_HEAP || builtin == BUILTIN_FILA || builtin == BUILTIN_GRAFO)
@@ -1423,6 +1462,62 @@ static Statement *parse_simple_statement(Token *token)
     return stmt;
 }
 
+/** type Edge { u: int; v: int; w: real }: campos com tipo, separados por ';', ',' ou linha. */
+static void parse_record(Token *token)
+{
+    if (function_depth)
+    {
+        fail_at(token->line, token->column, "registros só podem ser declarados no topo do arquivo");
+    }
+
+    Token *name_token = expect_token(TOKEN_NAME);
+    Record record = {0};
+
+    if (find_record(name_token->text))
+    {
+        fail_at(name_token->line, name_token->column, "o registro '%s' já foi declarado",
+                name_token->text);
+    }
+
+    record.name = name_token->text;
+    record.line = name_token->line;
+    record.column = name_token->column;
+    skip_newlines();
+    expect_token(PUNCT_LEFT_BRACE);
+    skip_newlines();
+
+    while (!accept_token(PUNCT_RIGHT_BRACE))
+    {
+        Token *field = expect_token(TOKEN_NAME);
+
+        for (int i = 0; i < record.field_names.count; i++)
+        {
+            if (!strcmp(record.field_names.items[i], field->text))
+            {
+                fail_at(field->line, field->column, "campo '%s' repetido", field->text);
+            }
+        }
+
+        expect_token(PUNCT_COLON);
+        PUSH(record.field_names, field->text);
+        PUSH(record.field_types, parse_type());
+
+        if (!accept_token(PUNCT_SEMICOLON))
+        {
+            accept_token(PUNCT_COMMA);
+        }
+
+        skip_newlines();
+    }
+
+    if (record.field_names.count < 2)
+    {
+        fail_at(record.line, record.column, "registro tem pelo menos 2 campos");
+    }
+
+    PUSH(records, record);
+}
+
 /** Um comando e o fim de linha dele. */
 /** Fim de comando: um ';' opcional (para quem está acostumado com C) e o fim da linha. */
 static void end_statement(void)
@@ -1499,7 +1594,9 @@ static void parse_statement(StatementList *out)
         return;
 
     case KEYWORD_TIPO:
-        fail_unimplemented(token);
+        position++;
+        parse_record(token);
+        return;
 
     default:
         PUSH(*out, parse_simple_statement(token));

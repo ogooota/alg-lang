@@ -64,7 +64,7 @@ make test                     # roda tests/cases/*.alg
 | Fila | `fila()`; `enfileirar`, `desenfileirar`, `frente` | ✅ |
 | Pilha | o próprio vetor: `adicionar`, `remover_ultimo` | ✅ |
 | Grafo | `grafo(n)`, `grafo(n, dirigido)`; `g.aresta(u, v[, peso])`; `para v em g.vizinhos(u)`, `para [v, w] em g.vizinhos(u)` | ✅ |
-| Registros | `tipo Aresta: u; v; peso` | ⏳ |
+| Registros | `tipo Aresta { peso: int; u: int; v: int }` (en: `type`), como a `struct` do C++, com os campos tipados; `Aresta(5, 1, 2)` constrói, `e.peso` lê e muda o campo. Por dentro é uma tupla com nomes: ordena campo a campo na ordem declarada, serve de chave de mapa, vai em heap, desmonta com `[w, u, v] = e` e é tipo escrito (`#decl arestas: {Aresta}`, `fn f(e: Aresta) -> Aresta`; `ler(n, arestas[0..n])` lê os campos em ordem) | ✅ |
 | Técnicas nativas | `prefixo`, `busca`, `mdc`, `mmc`, `potmod`, `crivo`, `conta_primos`, `conjuntos`, `fenwick`, `segtree`, `rmq` (seção abaixo) | ✅ |
 | Adiado | `rep(ação, parada)`, tradutor pt↔en, compressão de coordenadas | — |
 
@@ -228,10 +228,10 @@ escrever(total)
 | `e` / `ou` / `nao` | `and` / `or` / `not` | | `existe` | `exists` |
 | `verdadeiro` / `falso` | `true` / `false` | | `algum` | `some` |
 | `uniao` | `union` | | `conj` | `set` |
-| `inter` | `inter` | | `tipo` ⏳ | `type` |
+| `inter` | `inter` | | `tipo` | `type` |
 | `menos` | `minus` | | | |
 
-As palavras marcadas com ⏳ já são reservadas, para que nenhum programa precise mudar quando elas entrarem.
+Todas as palavras da tabela já funcionam.
 
 ## Estrutura do compilador
 

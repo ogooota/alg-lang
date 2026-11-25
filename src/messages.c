@@ -285,6 +285,18 @@ static const char *const MESSAGES[][2] = {
      "set"},
     {"%s recebe um gerador: %s(x > 0 para x em v)",
      "%s takes a generator: %s(x > 0 for x in v)"},
+    {"%s não tem o campo '%s'",
+     "%s has no field '%s'"},
+    {"registros só podem ser declarados no topo do arquivo",
+     "records can only be declared at the top level of the file"},
+    {"o registro '%s' já foi declarado",
+     "record '%s' was already declared"},
+    {"campo '%s' repetido",
+     "repeated field '%s'"},
+    {"registro tem pelo menos 2 campos",
+     "a record has at least 2 fields"},
+    {"campo de registro guarda int, real, str ou tupla",
+     "a record field holds int, real, str or a tuple"},
 };
 
 /** O texto no idioma do programa (o português é a chave; sem tradução, fica o original). */

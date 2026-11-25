@@ -111,6 +111,11 @@ const char *type_name(Type *type)
         return slot;
 
     case TYPE_TUPLE:
+        if (type->record)
+        {
+            return type->record->name;
+        }
+
         snprintf(slot, 64, message_text("tupla de %d valores"), type->field_count);
         return slot;
 
@@ -171,6 +176,7 @@ void fill_cell(Type *cell, Type *type)
     cell->kind = type->kind;
     cell->fields = type->fields;
     cell->field_count = type->field_count;
+    cell->record = type->record;
 }
 
 /* para variáveis novas: escalar vira tipo próprio (não compartilha célula); vetor compartilha */
@@ -198,6 +204,7 @@ Type *owned_type(Type *type)
         Type *cell = new_type(TYPE_TUPLE);
         cell->fields = type->fields;
         cell->field_count = type->field_count;
+        cell->record = type->record;
         return cell;
     }
 
@@ -405,6 +412,31 @@ void store_in_cell(Type *cell, Type *type, Expression *location)
     }
 }
 
+/** Tipo de um registro: a tupla com os tipos declarados dos campos, guardando o nome deles. */
+Type *record_type(Record *record)
+{
+    Type *type = new_type(TYPE_TUPLE);
+
+    type->record = record;
+    type->field_count = record->field_names.count;
+    type->fields = allocate_zeroed(sizeof(Type *) * (size_t)type->field_count);
+
+    for (int i = 0; i < type->field_count; i++)
+    {
+        TypeSyntax *field = record->field_types.items[i];
+
+        if (field->shape != TYPE_INT && field->shape != TYPE_REAL && field->shape != TYPE_STRING &&
+            field->shape != TYPE_TUPLE)
+        {
+            fail_at(field->line, field->column, "campo de registro guarda int, real, str ou tupla");
+        }
+
+        type->fields[i] = type_from_syntax(field, 1);
+    }
+
+    return type;
+}
+
 /** Tipo de campo de tupla ou de chave/valor de mapa escrito: int, real, int32, str ou tupla. */
 static Type *scalar_from_syntax(TypeSyntax *syntax, const char *where)
 {
@@ -451,6 +483,12 @@ Type *type_from_syntax(TypeSyntax *syntax, int cell)
     case TYPE_TUPLE:
     {
         Type *type = new_type(TYPE_TUPLE);
+
+        /* nome de registro: os campos vêm da declaração dele */
+        if (syntax->record)
+        {
+            return record_type(syntax->record);
+        }
 
         type->field_count = syntax->fields.count;
         type->fields = allocate_zeroed(sizeof(Type *) * (size_t)type->field_count);

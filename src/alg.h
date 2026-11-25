@@ -199,6 +199,7 @@ struct Type
     int dimension_count; /* TY_ARR: número de dimensões */
 
     Type **fields; /* TY_TUP: tipos dos campos */
+    struct Record *record; /* TY_TUP: registro (dá nome aos campos: e.w), ou NULL */
     int field_count;
     Type *value;    /* TY_MAP: tipo do valor */
     int is_set;     /* TY_MAP: conjunto (set {}), um mapa que só guarda as chaves */
@@ -271,12 +272,25 @@ struct Expression
 /* tipo escrito pelo usuário: int, real, int32, str, {T}, (T, U), map {K: V} */
 typedef struct TypeSyntax TypeSyntax;
 
+/* registro: type Edge { u: int; v: int; w: int } é uma tupla com nomes nos campos */
+typedef struct Record
+{
+    char *name;
+    VEC(char *) field_names;
+    VEC(TypeSyntax *) field_types;
+    int line;
+    int column;
+} Record;
+
+Record *find_record(const char *name);
+
 struct TypeSyntax
 {
     TypeKind shape; /* TYPE_INT, TYPE_REAL, TYPE_STRING, TYPE_ARRAY, TYPE_TUPLE, TYPE_MAP, TYPE_HEAP,
                        TYPE_QUEUE ou TYPE_GRAPH */
     int is_int32;
     int option; /* heap(greater): o maior sai primeiro; graph(directed): dirigido */
+    Record *record; /* TYPE_TUPLE escrito com o nome de um registro (Edge) */
     TypeSyntax *element; /* vetor: elemento; mapa: chave */
     TypeSyntax *value;   /* mapa: valor */
     VEC(TypeSyntax *) fields;
