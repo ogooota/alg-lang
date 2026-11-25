@@ -124,7 +124,7 @@ const char *type_name(Type *type)
         return message_text("grafo");
 
     case TYPE_MAP:
-        return message_text("mapa");
+        return message_text(type->is_set ? "conjunto" : "mapa");
 
     case TYPE_DSU:
         return message_text("conjuntos");
@@ -334,6 +334,11 @@ void unify_types(Type *target, Type *source, Expression *location)
 
     if (target->kind == TYPE_MAP)
     {
+        if (target->is_set != source->is_set)
+        {
+            FAIL_AT_NODE(location, "conjunto e mapa são tipos diferentes");
+        }
+
         unify_elements(target->value, source->value, location);
     }
 
@@ -465,6 +470,15 @@ Type *type_from_syntax(TypeSyntax *syntax, int cell)
         type->element = new_structure_cell();
         type->value = new_structure_cell();
         fill_cell(type->element, scalar_from_syntax(syntax->element, "chave de mapa"));
+
+        /* set {T}: mapa só de chaves */
+        if (syntax->option)
+        {
+            type->is_set = 1;
+            type->value->kind = TYPE_INT;
+            return type;
+        }
+
         fill_cell(type->value, scalar_from_syntax(syntax->value, "valor de mapa"));
         return type;
     }
@@ -543,7 +557,8 @@ int same_signature(Type *left_type, Type *right_type)
         return cells_compatible(left_type->element, right_type->element);
 
     case TYPE_MAP:
-        return cells_compatible(left_type->element, right_type->element) &&
+        return left_type->is_set == right_type->is_set &&
+               cells_compatible(left_type->element, right_type->element) &&
                cells_compatible(left_type->value, right_type->value);
 
     case TYPE_GRAPH:

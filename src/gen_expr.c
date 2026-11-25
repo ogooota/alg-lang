@@ -170,6 +170,20 @@ void gen_tuple_comparison(TextBuffer *out, Expression *expr)
 /** Escreve uma operação binária (divisão e resto com a regra da linguagem). */
 void gen_binary(TextBuffer *out, Expression *expr)
 {
+    /* conjuntos: union 0, inter 1, minus 2 (map_*_combine em rt/map.h) */
+    if (expr->operation == KEYWORD_UNIAO || expr->operation == KEYWORD_INTER ||
+        expr->operation == KEYWORD_MENOS)
+    {
+        text_appendf(out, "%s_combine(", template_name(expr->type));
+        gen_expression(out, expr->first);
+        text_append(out, ", ");
+        gen_expression(out, expr->second);
+        text_appendf(out, ", %d)", expr->operation == KEYWORD_UNIAO   ? 0
+                                   : expr->operation == KEYWORD_INTER ? 1
+                                                                      : 2);
+        return;
+    }
+
     if (expr->operation == KEYWORD_EM)
     {
         text_appendf(out, "%s_has(", template_name(expr->second->type));
@@ -725,6 +739,17 @@ void gen_method_call(TextBuffer *out, Expression *expr)
         return;
     }
 
+    /* s.add(x) num conjunto: a chave passa a existir */
+    if (type->kind == TYPE_MAP && method == METHOD_ADICIONAR)
+    {
+        text_appendf(out, "(*%s_ref(", template_name(type));
+        gen_expression(out, expr->first);
+        text_append(out, ", ");
+        gen_expression(out, expr->arguments.items[0]);
+        text_append(out, ") = 1)");
+        return;
+    }
+
     if (method == METHOD_GRUPOS)
     {
         text_append(out, "(");
@@ -984,7 +1009,29 @@ void gen_expression(TextBuffer *out, Expression *expr)
         return;
 
     case EXPR_MAP:
-        text_appendf(out, "%s_new()", template_name(expr->type));
+        if (!expr->arguments.count)
+        {
+            text_appendf(out, "%s_new()", template_name(expr->type));
+            return;
+        }
+
+        /* set {a, b}: cria e põe cada chave (expressão do GNU C, como os outros literais) */
+        {
+            int temp_id = temp_counter++;
+            const char *c_name = template_name(expr->type);
+
+            text_appendf(out, "({ %s *_s%d = %s_new(); ", template_type(expr->type), temp_id, c_name);
+
+            for (int i = 0; i < expr->arguments.count; i++)
+            {
+                text_appendf(out, "*%s_ref(_s%d, ", c_name, temp_id);
+                gen_expression(out, expr->arguments.items[i]);
+                text_append(out, ") = 1; ");
+            }
+
+            text_appendf(out, "_s%d; })", temp_id);
+        }
+
         return;
 
     case EXPR_GENERATOR:

@@ -224,6 +224,28 @@ Type *check_binary(Expression *expr)
         return &INT_TYPE;
     }
 
+    /* a union b, a inter b, a minus b: conjunto novo com as chaves de um tipo só */
+    if (expr->operation == KEYWORD_UNIAO || expr->operation == KEYWORD_INTER ||
+        expr->operation == KEYWORD_MENOS)
+    {
+        Type *left_type = check_expression(expr->first);
+        Type *right_type = check_expression(expr->second);
+
+        if (left_type->kind != TYPE_MAP || !left_type->is_set || right_type->kind != TYPE_MAP ||
+            !right_type->is_set)
+        {
+            FAIL_AT_NODE(expr, "'%s' junta dois conjuntos", token_name(expr->operation));
+        }
+
+        unify_types(left_type, right_type, expr->second);
+
+        Type *type = new_type(TYPE_MAP);
+        type->is_set = 1;
+        type->element = left_type->element;
+        type->value = left_type->value;
+        return expr->type = type;
+    }
+
     if (expr->operation >= PUNCT_EQUAL && expr->operation <= PUNCT_GREATER_EQUAL)
     {
         Type *left_type = resolve_unknown(check_expression(expr->first));
@@ -364,6 +386,17 @@ Type *check_method(Expression *expr)
     {
         check_argument_count(expr, 1, 1);
         Type *value = resolve_unknown(check_expression(expr->arguments.items[0]));
+
+        if (type->kind == TYPE_MAP)
+        {
+            if (!type->is_set)
+            {
+                FAIL_AT_NODE(expr, "mapa guarda com m[k] = valor; adicionar é de vetor e conjunto");
+            }
+
+            store_in_cell(type->element, value, expr->arguments.items[0]);
+            return &VOID_TYPE;
+        }
 
         /* texto.add(outro texto) acrescenta no fim */
         if (is_string(type) && is_string(value))
@@ -518,6 +551,19 @@ Type *check_expression(Expression *expr)
 
         type->element = new_structure_cell();
         type->value = new_structure_cell();
+
+        if (expr->operation == KEYWORD_CONJ)
+        {
+            type->is_set = 1;
+            type->value->kind = TYPE_INT;
+
+            for (int i = 0; i < expr->arguments.count; i++)
+            {
+                Expression *item = expr->arguments.items[i];
+                store_in_cell(type->element, check_expression(item), item);
+            }
+        }
+
         return expr->type = type;
     }
 
@@ -544,6 +590,11 @@ Type *check_expression(Expression *expr)
 
         if (type->kind == TYPE_MAP)
         {
+            if (type->is_set)
+            {
+                FAIL_AT_NODE(expr, "conjunto não tem s[x]: use 'x em s'");
+            }
+
             store_in_cell(type->element, check_expression(expr->second), expr->second);
             return expr->type = value_of_cell(type->value);
         }

@@ -271,6 +271,18 @@ static const char *const MESSAGES[][2] = {
      "name"},
     {"alg: o compilador C falhou (isso é bug do alg, por favor reporte)\n",
      "alg: the C compiler failed (this is an alg bug, please report it)\n"},
+    {"conjunto não tem s[x]: use 'x em s'",
+     "a set has no s[x]: use 'x in s'"},
+    {"conjunto dá um valor por vez: para x em s",
+     "a set gives one value at a time: for x in s"},
+    {"conjunto e mapa são tipos diferentes",
+     "set and map are different types"},
+    {"'%s' junta dois conjuntos",
+     "'%s' combines two sets"},
+    {"mapa guarda com m[k] = valor; adicionar é de vetor e conjunto",
+     "a map stores with m[k] = value; add is for arrays and sets"},
+    {"conjunto",
+     "set"},
 };
 
 /** O texto no idioma do programa (o português é a chave; sem tradução, fica o original). */

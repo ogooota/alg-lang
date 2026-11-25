@@ -201,6 +201,7 @@ struct Type
     Type **fields; /* TY_TUP: tipos dos campos */
     int field_count;
     Type *value;    /* TY_MAP: tipo do valor */
+    int is_set;     /* TY_MAP: conjunto (set {}), um mapa que só guarda as chaves */
     int descending; /* TY_HEAP: heap(maior) */
     int directed;   /* TY_GRAPH: grafo(n, dirigido) */
     int weighted;   /* TY_GRAPH: alguma aresta tem peso */

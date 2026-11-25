@@ -331,6 +331,11 @@ void check_for_in(Statement *stmt)
         {
             types[type_count++] = value_of_cell(resolve_unknown(type->element));
 
+            if (pattern_count == 2 && type->is_set)
+            {
+                FAIL_AT_NODE(stmt, "conjunto dá um valor por vez: para x em s");
+            }
+
             if (pattern_count == 2)
             {
                 types[type_count++] = value_of_cell(resolve_unknown(type->value));

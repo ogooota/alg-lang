@@ -289,7 +289,19 @@ static Expression *parse_primary(void)
         expr->text = token->text;
         return expr;
 
+    /* set {}, set {1, 2}: um mapa só de chaves (operation marca o conjunto) */
     case KEYWORD_CONJ:
+    {
+        Expression *set = new_expression(EXPR_MAP, token);
+
+        position++;
+        set->operation = KEYWORD_CONJ;
+        expect_token(PUNCT_LEFT_BRACE);
+        parse_expression_list(&set->arguments, PUNCT_RIGHT_BRACE);
+        expect_token(PUNCT_RIGHT_BRACE);
+        return set;
+    }
+
     case KEYWORD_TODO:
     case KEYWORD_EXISTE:
     case KEYWORD_ALGUM:
@@ -392,8 +404,8 @@ static const TokenKind PRECEDENCE_LEVELS[][7] = {
     {PUNCT_CARET},
     {PUNCT_AMPERSAND},
     {PUNCT_SHIFT_LEFT, PUNCT_SHIFT_RIGHT},
-    {PUNCT_PLUS, PUNCT_MINUS},
-    {PUNCT_STAR, PUNCT_SLASH, PUNCT_PERCENT},
+    {PUNCT_PLUS, PUNCT_MINUS, KEYWORD_UNIAO, KEYWORD_MENOS},
+    {PUNCT_STAR, PUNCT_SLASH, PUNCT_PERCENT, KEYWORD_INTER},
 };
 
 #define PRECEDENCE_LEVEL_COUNT ((int)(sizeof PRECEDENCE_LEVELS / sizeof *PRECEDENCE_LEVELS))
@@ -469,11 +481,6 @@ static Expression *parse_binary(int level)
 /** Uma expressão completa. */
 static Expression *parse_expression(void)
 {
-    if (at_token(KEYWORD_UNIAO) || at_token(KEYWORD_INTER) || at_token(KEYWORD_MENOS))
-    {
-        fail_unimplemented(current_token());
-    }
-
     return parse_binary(0);
 }
 
@@ -533,6 +540,16 @@ static TypeSyntax *parse_type(void)
     if (accept_token(PUNCT_LEFT_BRACE))
     {
         syntax->shape = TYPE_ARRAY;
+        syntax->element = parse_type();
+        expect_token(PUNCT_RIGHT_BRACE);
+        return syntax;
+    }
+
+    if (accept_token(KEYWORD_CONJ))
+    {
+        syntax->shape = TYPE_MAP;
+        syntax->option = 1;
+        expect_token(PUNCT_LEFT_BRACE);
         syntax->element = parse_type();
         expect_token(PUNCT_RIGHT_BRACE);
         return syntax;

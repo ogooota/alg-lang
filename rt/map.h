@@ -1,5 +1,5 @@
 /* Template de mapa: hash com endereçamento aberto e sondagem linear (KEY, KEY_INPUT, MAP_VALUE,
- * MAP, FN, HASH, HASH_STORED, KEYS_EQUAL, KEY_STORE, KEY_LESS, ORDER_PREFIX opcional). Detalhes em docs/compilador.md. */
+ * MAP, FN, HASH, HASH_STORED, KEYS_EQUAL, KEY_STORE, KEY_LESS, ORDER_PREFIX opcional, KEY_LOAD). Detalhes em docs/compilador.md. */
 
 /* chave e valor juntos: a busca que acha a chave já trouxe o valor para o cache */
 typedef struct
@@ -231,3 +231,38 @@ static FN(_Entries) FN(_entries)(MAP *map)
     free(order);
     return entries;
 }
+
+#ifdef SET_OPERATIONS
+
+/** Conjunto novo a partir de dois: 0 união, 1 interseção, 2 diferença (left menos right). */
+static MAP *FN(_combine)(MAP *left, MAP *right, int operation)
+{
+    MAP *result = FN(_new)();
+
+    for (int64_t i = 0; i < left->capacity; i++)
+    {
+        if (left->controls[i] < 0x80)
+        {
+            continue;
+        }
+
+        int in_right = FN(_find)(right, KEY_LOAD(left->slots[i].key)) >= 0;
+
+        if (operation == 0 || (operation == 1) == in_right)
+        {
+            *FN(_ref)(result, KEY_LOAD(left->slots[i].key)) = 1;
+        }
+    }
+
+    for (int64_t i = 0; operation == 0 && i < right->capacity; i++)
+    {
+        if (right->controls[i] >= 0x80)
+        {
+            *FN(_ref)(result, KEY_LOAD(right->slots[i].key)) = 1;
+        }
+    }
+
+    return result;
+}
+
+#endif

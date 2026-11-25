@@ -292,6 +292,13 @@ void emit_template(TextBuffer *out, const TemplateUse *template_use)
         /* chave string: busca com o texto (ArrayU8), guarda a forma compacta (Str) */
         text_appendf(out, "#define KEY_STORE(key) %s\n#define KEY_INPUT %s\n",
                      is_text_key ? "str_pack(key)" : "(key)", element_kind->value_type);
+        text_appendf(out, "#define KEY_LOAD(key) %s\n", is_text_key ? "str_unpack(key)" : "(key)");
+
+        /* union/inter/minus: só nos mapas de valor inteiro, que é como o conjunto é guardado */
+        if (template_use->value->kind == 0)
+        {
+            text_append(out, "#define SET_OPERATIONS\n");
+        }
         text_appendf(out, "#define HASH_STORED(key) %s\n",
                      is_text_key ? "packed_hash(key)" : hash_macro);
         text_appendf(out, "#define KEY %s\n#define MAP_VALUE %s\n#define MAP %s\n",
@@ -309,11 +316,16 @@ void emit_template(TextBuffer *out, const TemplateUse *template_use)
         {
             text_append(out, "#define ORDER_PREFIX(key) ((uint64_t)(int64_t)(key) ^ (1ULL << 63))\n");
         }
+        else if (element_kind->kind == 2)
+        {
+            text_appendf(out, "#define ORDER_PREFIX(key) %s_prefix(key)\n", element_kind->suffix);
+        }
+
         emit_text(out, rt_map_h, rt_map_h_len);
         text_append(out,
                     "#undef KEY\n#undef MAP_VALUE\n#undef MAP\n#undef HASH\n#undef KEYS_EQUAL\n"
                     "#undef KEY_LESS\n#undef ORDER_PREFIX\n#undef KEY_STORE\n#undef KEY_INPUT\n"
-                    "#undef HASH_STORED\n");
+                    "#undef HASH_STORED\n#undef KEY_LOAD\n#undef SET_OPERATIONS\n");
     }
     else if (template_use->kind == TEMPLATE_FENWICK)
     {

@@ -52,9 +52,9 @@ make test                     # roda tests/cases/*.alg
 | Pilha | o programa roda com 256 MB de pilha (recursão funda) | ✅ |
 | Unicode | `≤ ≥ ≠ ← ∈` como sinônimos opcionais | ✅ |
 | Texto (strings) | seção "Texto" abaixo | ✅ |
-| Conjunto | `conj {}`; o compilador escolhe hash ou árvore pelo uso | ⏳ |
+| Conjunto | `conj {}` / `conj {1, 2}` (en: `set`); `s.adicionar(x)`, `s.remover(x)`, `x em s`, `s.tam()`, `para x em s` (em ordem); tipo `conj {int}`. Por dentro é o mesmo hash do mapa, só com as chaves (busca O(1), percorrer em ordem custa uma ordenação radix) | ✅ |
 | Compreensão | `{x em v se x > 0}` vetor; `conj {...}` conjunto | ⏳ |
-| Operações de conjunto | `uniao`, `inter`, `menos` (o `em` já funciona com mapa) | ⏳ |
+| Operações de conjunto | `a uniao b`, `a inter b`, `a menos b` (en: `union`, `inter`, `minus`) criam um conjunto novo; `inter` liga como `*`, `uniao` e `menos` como `+` | ✅ |
 | Quantificadores | `para todo`, `existe` / `para algum` | ⏳ |
 | `INF` | constante 10¹⁸ (folga para `INF + peso`); em vetor `: int32` vira um valor especial e volta a ser 10¹⁸ na leitura | ✅ |
 | Tuplas | valor com parênteses `(d, v)`; campo com `p[0]`, `p[1]` (número fixo; também para mudar: `item[i][0] += 1`); campos inteiros, reais, strings ou outras tuplas (`(nota, nome)` ordena por nota e desempata pelo nome; `(1, (2, "ab"))` e `p[1][0]`); comparação lexicográfica; desmontar usa colchetes, como o `auto [a, b]` do C++: `[a, b] = p`, `[a, b] = (b, a)` (troca), `para [a, b] em v` | ✅ |
@@ -227,9 +227,9 @@ escrever(total)
 | `mapa` / `remover` | `map` / `remove` | | `INF` | `INF` |
 | `e` / `ou` / `nao` | `and` / `or` / `not` | | `existe` ⏳ | `exists` |
 | `verdadeiro` / `falso` | `true` / `false` | | `algum` ⏳ | `some` |
-| `uniao` ⏳ | `union` | | `conj` ⏳ | `set` |
-| `inter` ⏳ | `inter` | | `tipo` ⏳ | `type` |
-| `menos` ⏳ | `minus` | | | |
+| `uniao` | `union` | | `conj` | `set` |
+| `inter` | `inter` | | `tipo` ⏳ | `type` |
+| `menos` | `minus` | | | |
 
 As palavras marcadas com ⏳ já são reservadas, para que nenhum programa precise mudar quando elas entrarem.
 

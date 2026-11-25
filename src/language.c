@@ -126,6 +126,7 @@ static const MethodName METHOD_NAMES[] = {
     {TYPE_SEGTREE, METHOD_MUDAR, {"mudar", "update"}},
     {TYPE_RMQ, METHOD_CONSULTA, {"consulta", "query"}},
     {TYPE_MAP, METHOD_REMOVER, {"remover", "remove"}},
+    {TYPE_MAP, METHOD_ADICIONAR, {"adicionar", "add"}},
 };
 
 /** Qual método é esse nome para o tipo de objeto e o idioma dados. */
