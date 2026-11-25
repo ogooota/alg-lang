@@ -23,7 +23,7 @@ void check_read_argument(Expression *argument)
 {
     if (argument->kind == EXPR_NAME)
     {
-        Variable *variable = lookup_variable(argument->text);
+        Variable *variable = lookup_assigned_variable(argument->text, NULL);
 
         if (!variable)
         {
@@ -195,7 +195,7 @@ void check_assignment(Statement *stmt)
 
             if (item->kind == EXPR_NAME)
             {
-                Variable *variable = lookup_variable(item->text);
+                Variable *variable = lookup_assigned_variable(item->text, stmt->second);
 
                 if (!variable)
                 {
@@ -226,7 +226,7 @@ void check_assignment(Statement *stmt)
 
     if (target->kind == EXPR_NAME)
     {
-        Variable *variable = lookup_variable(target->text);
+        Variable *variable = lookup_assigned_variable(target->text, stmt->second);
 
         if (!variable)
         {
@@ -451,6 +451,7 @@ void check_statement(Statement *stmt, int top, int *seen_code)
                 declaration->line);
 
             variable->is_declared_string = is_text;
+            variable->is_declared = 1;
 
             if (declaration->dimensions.count)
             {
@@ -494,7 +495,7 @@ void check_statement(Statement *stmt, int top, int *seen_code)
                 FAIL_AT_NODE(target, "ler_linha() lê numa variável de texto");
             }
 
-            Variable *variable = lookup_variable(target->text);
+            Variable *variable = lookup_assigned_variable(target->text, NULL);
 
             if (!variable)
             {

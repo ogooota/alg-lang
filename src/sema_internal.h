@@ -51,6 +51,7 @@ void store_in_cell(Type *cell, Type *type, Expression *location);
 Type *new_structure_cell(void);
 Variable *lookup_variable(const char *name);
 Variable *lookup_loop_variable(const char *name);
+Variable *lookup_assigned_variable(const char *name, Expression *value);
 Variable *declare_in_scope(Scope *scope, const char *name, Type *ty, int line);
 Variable *declare_variable(const char *name, Type *ty, int line);
 Function *find_function(const char *name);

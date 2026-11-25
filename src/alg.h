@@ -316,6 +316,7 @@ struct Variable
     Type *type;
     int is_global;
     int is_parameter;
+    int is_declared;        /* veio de #decl: no topo, as funções podem atribuir a ela */
     int is_lazy;            /* #decl v[n][m]: vetor alocado no primeiro uso */
     int is_declared_string; /* #decl s: str (read(s) lê palavra; read(s[0..n]) lê vetor de strings)
                              */

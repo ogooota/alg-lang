@@ -1,5 +1,6 @@
 #lang pt
 // compara ordenar() com inserção, para cada tamanho de elemento e de vetor
+#decl semente
 semente = 12345
 
 fn proximo() {

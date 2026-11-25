@@ -1,5 +1,6 @@
 #lang pt
 // cada técnica nativa comparada com a força bruta, em valores aleatórios
+#decl semente
 semente = 7
 
 fn proximo() {

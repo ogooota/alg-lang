@@ -42,7 +42,7 @@ make test                     # roda tests/cases/*.alg
 | Atualização | `+=` `-=` `*=` `/=` `%=` `&=` `\|=` `^=` `<<=` `>>=` (iguais ao C); `x++` / `x--` (também `++x` / `--x`); só como comando, nunca dentro de expressão | ✅ |
 | Precedência | bit a bit liga mais forte que comparação (`x & 1 == 0` funciona) | ✅ |
 | Funções | `fn f(x):` + `ret`, ou `f(x) = expr`; tipos inferidos pelas chamadas | ✅ |
-| Escopo | atribuir a uma global dentro de função altera a global; a variável do `para` dentro de função é sempre local | ✅ |
+| Escopo | dentro de função, variável é local por padrão: `x = ...`, `[a, b] = ...`, `ler(x)` e a variável do `para` criam uma local, mesmo que exista uma global com o mesmo nome. Para mudar uma global dentro da função, declare-a no `#decl` do topo. Posição de vetor (`dp[i] = x`) e métodos (`h.inserir(x)`) em globais funcionam sem isso, e ler uma global também. `x++` ou `x = x + 1` numa global sem `#decl` é erro (mudaria só uma cópia local) | ✅ |
 | Passagem | número por valor, vetor por referência | ✅ |
 | Programa | sem `main`: o topo do arquivo é o programa; `ret` encerra | ✅ |
 | Entrada | `ler(a, b, v[0..n])`: da esquerda para a direita, cria o vetor se preciso | ✅ |

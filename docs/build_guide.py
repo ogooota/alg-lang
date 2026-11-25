@@ -132,6 +132,7 @@ TRANSLATION = [
     ("<code>for (auto x : v) {</code>", "<code>for x in v {</code>", "<code>para x em v {</code>", t("", "")),
     ("<code>for (int i = n - 1; i &gt;= 0; i--)</code>", "<code>for (i = n - 1; i &gt;= 0; i--)</code>", "<code>para (i = n - 1; i &gt;= 0; i--)</code>", t("the C form also works", "a forma do C também vale")),
     ("<code>long long</code>", "—", "—", t("every integer is 64-bit", "todo inteiro é de 64 bits")),
+    ("global <code>int timer;</code> changed in a function", "<code>#decl timer</code> at the top", "<code>#decl timer</code> no topo", t("other names assigned in a function are local", "outros nomes atribuídos na função são locais")),
     ("<code>int dp[N][M]</code> (global)", "<code>#decl dp[n][m]: int32;</code>", "<code>#decl dp[n][m]: int32;</code>", t("real size, not the maximum", "tamanho real, não o máximo")),
     ("<code>i++</code>, <code>i--</code>", "<code>i++</code>, <code>i--</code>", "<code>i++</code>, <code>i--</code>", t("statements only", "só como comando")),
     ("<code>pair&lt;ll, int&gt;</code>", "<code>(d, u)</code>", "<code>(d, u)</code>", t("tuples of any size", "tupla de qualquer tamanho")),

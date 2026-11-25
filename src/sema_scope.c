@@ -120,6 +120,66 @@ Variable *lookup_loop_variable(const char *name)
     return NULL;
 }
 
+/** Diz se a expressão lê o nome (x = x + 1, x++, [a, b] = (b, a)). */
+static int expression_mentions(Expression *expr, const char *name)
+{
+    if (!expr)
+    {
+        return 0;
+    }
+
+    if (expr->kind == EXPR_NAME && !strcmp(expr->text, name))
+    {
+        return 1;
+    }
+
+    for (int i = 0; i < expr->arguments.count; i++)
+    {
+        if (expression_mentions(expr->arguments.items[i], name))
+        {
+            return 1;
+        }
+    }
+
+    return expression_mentions(expr->first, name) || expression_mentions(expr->second, name) ||
+           expression_mentions(expr->third, name);
+}
+
+/**
+ * Alvo de atribuição: dentro de função vale a local ou a global do #decl do topo; outra
+ * global com o mesmo nome não é tocada (NULL: quem chama cria a local).
+ */
+Variable *lookup_assigned_variable(const char *name, Expression *value)
+{
+    if (!current_instance)
+    {
+        return lookup_variable(name);
+    }
+
+    Variable *local = lookup_loop_variable(name);
+
+    if (local)
+    {
+        return local;
+    }
+
+    Variable *global = scope_find(&global_scope, name);
+
+    if (global && global->is_declared)
+    {
+        return global;
+    }
+
+    /* x++ numa global sem #decl mudaria só uma cópia local: melhor avisar */
+    if (global && expression_mentions(value, name))
+    {
+        FAIL_AT_NODE(value, "'%s' é global: para mudar dentro da função, declare no #decl do topo",
+                     name);
+    }
+
+    return NULL;
+}
+
 /** Cria uma variável no escopo dado. */
 Variable *declare_in_scope(Scope *scope, const char *name, Type *ty, int line)
 {

@@ -779,6 +779,7 @@ int main() {
 <tr><td><code>for (auto x : v) {</code></td><td><code>for x in v {</code></td><td></td></tr>
 <tr><td><code>for (int i = n - 1; i &gt;= 0; i--)</code></td><td><code>for (i = n - 1; i &gt;= 0; i--)</code></td><td>the C form also works</td></tr>
 <tr><td><code>long long</code></td><td>—</td><td>every integer is 64-bit</td></tr>
+<tr><td>global <code>int timer;</code> changed in a function</td><td><code>#decl timer</code> at the top</td><td>other names assigned in a function are local</td></tr>
 <tr><td><code>int dp[N][M]</code> (global)</td><td><code>#decl dp[n][m]: int32;</code></td><td>real size, not the maximum</td></tr>
 <tr><td><code>i++</code>, <code>i--</code></td><td><code>i++</code>, <code>i--</code></td><td>statements only</td></tr>
 <tr><td><code>pair&lt;ll, int&gt;</code></td><td><code>(d, u)</code></td><td>tuples of any size</td></tr>
@@ -1252,6 +1253,7 @@ int main() {
 <tr><td><code>for (auto x : v) {</code></td><td><code>para x em v {</code></td><td></td></tr>
 <tr><td><code>for (int i = n - 1; i &gt;= 0; i--)</code></td><td><code>para (i = n - 1; i &gt;= 0; i--)</code></td><td>a forma do C também vale</td></tr>
 <tr><td><code>long long</code></td><td>—</td><td>todo inteiro é de 64 bits</td></tr>
+<tr><td>global <code>int timer;</code> changed in a function</td><td><code>#decl timer</code> no topo</td><td>outros nomes atribuídos na função são locais</td></tr>
 <tr><td><code>int dp[N][M]</code> (global)</td><td><code>#decl dp[n][m]: int32;</code></td><td>tamanho real, não o máximo</td></tr>
 <tr><td><code>i++</code>, <code>i--</code></td><td><code>i++</code>, <code>i--</code></td><td>só como comando</td></tr>
 <tr><td><code>pair&lt;ll, int&gt;</code></td><td><code>(d, u)</code></td><td>tupla de qualquer tamanho</td></tr>
