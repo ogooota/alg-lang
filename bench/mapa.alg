@@ -6,7 +6,7 @@ for i=0 to n {
     cont[x] = cont[x] + 1
 }
 melhor = 0
-for (k, c) in cont {
+for [k, c] in cont {
     melhor = max(melhor, c)
 }
 write(cont.size(), melhor)

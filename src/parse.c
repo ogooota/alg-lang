@@ -896,14 +896,6 @@ static void parse_c_style_for(Token *token, StatementList *out)
     StatementList body = {0};
     parse_block(&body);
 
-    Statement *counting = as_counting_for(token, init, condition, step, &body);
-
-    if (counting)
-    {
-        PUSH(*out, counting);
-        return;
-    }
-
     Statement *loop = new_statement(STMT_WHILE, token);
     loop->first = condition;
     loop->body = body;
@@ -911,6 +903,22 @@ static void parse_c_style_for(Token *token, StatementList *out)
     if (step)
     {
         PUSH(loop->else_body, step);
+    }
+
+    Statement *counting = as_counting_for(token, init, condition, step, &body);
+
+    /* a sema volta para a forma while (init + laço num if (1) sem escopo) se o tipo for real */
+    if (counting)
+    {
+        Statement *wrapper = new_statement(STMT_IF, token);
+
+        wrapper->first = new_expression(EXPR_INT, token);
+        wrapper->first->int_value = 1;
+        PUSH(wrapper->body, init);
+        PUSH(wrapper->body, loop);
+        counting->fallback = wrapper;
+        PUSH(*out, counting);
+        return;
     }
 
     if (init)
@@ -921,7 +929,7 @@ static void parse_c_style_for(Token *token, StatementList *out)
     PUSH(*out, loop);
 }
 
-/** Nomes de (a, b) no for, depois do '(' já consumido, até o ')'. */
+/** Nomes de [a, b] no for, depois do '[' já consumido, até o ']'. */
 static void parse_for_pattern(Statement *stmt)
 {
     do
@@ -929,12 +937,12 @@ static void parse_for_pattern(Statement *stmt)
         PUSH(stmt->parameters, expect_token(TOKEN_NAME)->text);
     } while (accept_token(PUNCT_COMMA));
 
-    expect_token(PUNCT_RIGHT_PAREN);
+    expect_token(PUNCT_RIGHT_BRACKET);
 }
 
 /**
- * para i=a ate b, para x em v, para (a, b) em v; com parênteses opcionais em volta
- * (for (i=0 to n), for (x in v), for ((a, b) in v)) e o for do C (for (i=0; i<n; i++)).
+ * para i=a ate b, para x em v, para [a, b] em v; com parênteses opcionais em volta
+ * (for (i=0 to n), for (x in v), for ([a, b] in v)) e o for do C (for (i=0; i<n; i++)).
  */
 static void parse_for(Token *token, StatementList *out)
 {
@@ -945,20 +953,25 @@ static void parse_for(Token *token, StatementList *out)
         return;
     }
 
-    /* for (a, b) in v: o parêntese é o padrão de tupla, não o do for */
-    int tuple_outside = at_token(PUNCT_LEFT_PAREN) &&
-                        tokens->items[position + 1].kind == TOKEN_NAME &&
-                        tokens->items[position + 2].kind == PUNCT_COMMA;
-    int parenthesized = !tuple_outside && accept_token(PUNCT_LEFT_PAREN);
+    int parenthesized = accept_token(PUNCT_LEFT_PAREN);
 
     if (at_token(KEYWORD_TODO) || at_token(KEYWORD_ALGUM))
     {
         fail_unimplemented(current_token());
     }
 
+    /* o padrão antigo (a, b) recebe a dica da forma nova */
+    if (at_token(PUNCT_LEFT_PAREN) ||
+        (parenthesized && at_token(TOKEN_NAME) &&
+         tokens->items[position + 1].kind == PUNCT_COMMA))
+    {
+        fail_at(current_token()->line, current_token()->column,
+                "o padrão de tupla do for usa colchetes: for [a, b] in v");
+    }
+
     Statement *stmt;
 
-    if (accept_token(PUNCT_LEFT_PAREN))
+    if (accept_token(PUNCT_LEFT_BRACKET))
     {
         stmt = new_statement(STMT_FOR_IN, token);
         parse_for_pattern(stmt);
@@ -1135,7 +1148,29 @@ static Statement *parse_simple_statement(Token *token)
                 token->text[0] == 'i' ? "++" : "--");
     }
 
-    Expression *expr = parse_expression();
+    Expression *expr;
+
+    /* [a, b] = valor desmonta a tupla (como o auto [a, b] do C++) */
+    if (accept_token(PUNCT_LEFT_BRACKET))
+    {
+        expr = new_expression(EXPR_TUPLE, token);
+        parse_expression_list(&expr->arguments, PUNCT_RIGHT_BRACKET);
+        expect_token(PUNCT_RIGHT_BRACKET);
+
+        if (!at_token(PUNCT_ASSIGN))
+        {
+            fail_at(token->line, token->column, "[a, b] só aparece antes de '=' ou no for");
+        }
+    }
+    else
+    {
+        expr = parse_expression();
+
+        if (expr->kind == EXPR_TUPLE && at_token(PUNCT_ASSIGN))
+        {
+            fail_at(expr->line, expr->column, "desmontar tupla usa colchetes: [a, b] = ...");
+        }
+    }
 
     if (compound_operator(current_token()->kind))
     {
@@ -1166,7 +1201,7 @@ static Statement *parse_simple_statement(Token *token)
 
     int valid = expr->kind == EXPR_NAME || expr->kind == EXPR_INDEX;
 
-    /* (a, b) = ... desmonta a tupla */
+    /* [a, b] = ... desmonta a tupla */
     if (expr->kind == EXPR_TUPLE)
     {
         valid = 1;
@@ -1181,7 +1216,7 @@ static Statement *parse_simple_statement(Token *token)
     if (!valid)
     {
         fail_at(expr->line, expr->column,
-                "só dá para atribuir a variável, posição de vetor ou (a, b)");
+                "só dá para atribuir a variável, posição de vetor ou [a, b]");
     }
 
     Statement *stmt = new_statement(STMT_ASSIGN, token);

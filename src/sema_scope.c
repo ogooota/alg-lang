@@ -215,6 +215,7 @@ Statement *clone_statement(Statement *stmt)
     copy->third = clone_expression(stmt->third);
     clone_statement_list(&copy->body, &stmt->body);
     clone_statement_list(&copy->else_body, &stmt->else_body);
+    copy->fallback = stmt->fallback ? clone_statement(stmt->fallback) : NULL;
     copy->declarations.items = NULL;
     copy->declarations.count = 0;
     copy->declarations.capacity = 0;

@@ -108,7 +108,7 @@ Cada arquivo é um template: o gerador define macros e inclui o texto uma vez po
   - Uma struct `{chave, valor}` por posição: a busca que acha a chave já traz o valor para o cache.
   - Um byte de controle por posição: 0 vazia, 1 removida, `0x80 | 7 bits do hash` quando ocupada. A ideia vem da SwissTable do Abseil; a sondagem só compara a chave quando os 7 bits batem.
 - **`m[k] op= x`** gera uma busca só (`gen_stmt.c`, `cached_map_index`). Antes eram duas: `get` e `ref`.
-- **`for (k, v) in m`** usa `_entries`:
+- **`for [k, v] in m`** usa `_entries`:
   - Copia os pares numa passada sequencial e ordena com `order_sort` pelo `ORDER_PREFIX`: inteiro com o sinal invertido, ou os 8 bytes do texto. Chaves tupla e real não têm prefixo e caem no `qsort`.
   - O valor sai da foto enquanto `map->writes` não muda, ou seja, enquanto o corpo não chama `_ref` nem `_del`. Se mudar, o valor é buscado de novo, como antes.
 

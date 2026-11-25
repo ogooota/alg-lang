@@ -280,8 +280,8 @@ Variable *loop_variable(const char *name, Type *type, Statement *stmt)
     return variable;
 }
 
-/** para x em v, para (a, b) em v, para k em m, para (k, x) em m,
- * para v em g.vizinhos(u) e para (v, w) em g.vizinhos(u). */
+/** para x em v, para [a, b] em v, para k em m, para [k, x] em m,
+ * para v em g.vizinhos(u) e para [v, w] em g.vizinhos(u). */
 void check_for_in(Statement *stmt)
 {
     Expression *iterable = stmt->first;
@@ -373,6 +373,16 @@ void check_for_in(Statement *stmt)
 }
 
 /** Checa um comando. */
+/** Diz se o for (i = a; i < b; i++) convertido em para nativo continua inteiro. */
+static int counting_for_is_integer(Statement *stmt)
+{
+    Variable *variable = lookup_loop_variable(stmt->text);
+
+    return check_expression(stmt->first)->kind != TYPE_REAL &&
+           check_expression(stmt->second)->kind != TYPE_REAL &&
+           (!variable || variable->type->kind != TYPE_REAL);
+}
+
 void check_statement(Statement *stmt, int top, int *seen_code)
 {
     if (stmt->kind != STMT_DECL && stmt->kind != STMT_FUNCTION)
@@ -571,6 +581,13 @@ void check_statement(Statement *stmt, int top, int *seen_code)
 
     case STMT_FOR:
     {
+        if (stmt->fallback && !counting_for_is_integer(stmt))
+        {
+            *stmt = *stmt->fallback;
+            check_statement(stmt, top, seen_code);
+            return;
+        }
+
         check_int(stmt->first);
         check_int(stmt->second);
         Variable *variable = lookup_loop_variable(stmt->text);

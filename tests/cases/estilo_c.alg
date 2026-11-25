@@ -14,8 +14,8 @@ for (i = 0 to 3) write(i)
 for (i = 0 thr 3) { write(i) }
 m = map {}
 m[1] = 2
-for ((a, b) in m) write(a, b)
-for (a, b) in m
+for ([a, b] in m) write(a, b)
+for [a, b] in m
     write(a, b)
 t = 0
 while (t < 3) t++

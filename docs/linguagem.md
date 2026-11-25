@@ -25,7 +25,7 @@ make test                     # roda tests/cases/*.alg
 | Comentário | `//` | ✅ |
 | `;` | opcional no fim de qualquer comando (`x = 3;`), para quem está acostumado com C | ✅ |
 | Parênteses do C | opcionais em `se (x > 0)`, `enquanto (i < n)` e `para (...)`: as duas formas valem, com ou sem. Com parênteses, o corpo de um comando só cabe na mesma linha: `se (x) escrever(x) senao escrever(0)` | ✅ |
-| `para` | `para i=0 ate n`, `para i=0 ate em n` (en: `thr`), `para x em v`, `para (a, b) em v`; com parênteses: `para (i=0 ate n)`, `para (x em v)`, `para ((a, b) em v)`; e o do C: `para (i = 0; i < n; i++)`, com qualquer condição e passo (`i--`, `i += 2`, `i *= 2`; partes vazias em `para (;;)`) | ✅ |
+| `para` | `para i=0 ate n`, `para i=0 ate em n` (en: `thr`), `para x em v`, `para [a, b] em v`; com parênteses: `para (i=0 ate n)`, `para (x em v)`, `para ([a, b] em v)`; e o do C: `para (i = 0; i < n; i++)`, com qualquer condição e passo (`i--`, `i += 2`, `i *= 2`; partes vazias em `para (;;)`) | ✅ |
 | Função | `fn nome(a, b):` com bloco, ou `f(x) = expr` em uma linha; `ret` devolve (iguais em pt e en) | ✅ |
 | Tipos | estáticos e inferidos; `int` (64 bits), `real`, `int32` — iguais em pt e en | ✅ |
 | `: int32` | `#decl dp[n][m]: int32` guarda em 32 bits; valor que não cabe é erro (sem `-O`) | ✅ |
@@ -56,13 +56,13 @@ make test                     # roda tests/cases/*.alg
 | Operações de conjunto | `uniao`, `inter`, `menos` (o `em` já funciona com mapa) | ⏳ |
 | Quantificadores | `para todo`, `existe` / `para algum` | ⏳ |
 | `INF` | constante 10¹⁸ (folga para `INF + peso`); em vetor `: int32` vira um valor especial e volta a ser 10¹⁸ na leitura | ✅ |
-| Tuplas | `(d, v)`, comparação lexicográfica, `(a, b) = ...`, `para (a, b) em v` | ✅ |
+| Tuplas | valor com parênteses `(d, v)`, comparação lexicográfica; desmontar usa colchetes, como o `auto [a, b]` do C++: `[a, b] = p`, `[a, b] = (b, a)` (troca), `para [a, b] em v` | ✅ |
 | Ordenar | `ordenar(v)`, `ordenar(v[i..j])`, `ordenar(v, maior)`; tuplas em ordem lexicográfica | ✅ |
-| Mapa | `m = mapa {}`, `m[k]` (ausente vale 0), `k em m`, `m.remover(k)`, `para (k, x) em m` (chaves em ordem) | ✅ |
+| Mapa | `m = mapa {}`, `m[k]` (ausente vale 0), `k em m`, `m.remover(k)`, `para [k, x] em m` (chaves em ordem) | ✅ |
 | Heap | `heap()` (menor sai primeiro), `heap(maior)`; `inserir`, `remover`, `topo` | ✅ |
 | Fila | `fila()`; `enfileirar`, `desenfileirar`, `frente` | ✅ |
 | Pilha | o próprio vetor: `adicionar`, `remover_ultimo` | ✅ |
-| Grafo | `grafo(n)`, `grafo(n, dirigido)`; `g.aresta(u, v[, peso])`; `para v em g.vizinhos(u)`, `para (v, w) em g.vizinhos(u)` | ✅ |
+| Grafo | `grafo(n)`, `grafo(n, dirigido)`; `g.aresta(u, v[, peso])`; `para v em g.vizinhos(u)`, `para [v, w] em g.vizinhos(u)` | ✅ |
 | Registros | `tipo Aresta: u; v; peso` | ⏳ |
 | Técnicas nativas | `prefixo`, `busca`, `mdc`, `mmc`, `potmod`, `crivo`, `conjuntos`, `fenwick`, `segtree`, `rmq` (seção abaixo) | ✅ |
 | Adiado | `rep(ação, parada)`, tradutor pt↔en, compressão de coordenadas | — |
@@ -196,7 +196,7 @@ para i=0 ate m {
 ordenar(arestas)
 d = conjuntos(n)
 total = 0
-para (w, u, v) em arestas {
+para [w, u, v] em arestas {
     se d.unir(u, v) {
         total += w
     }

@@ -585,7 +585,7 @@ static void walk_statement(Statement *stmt)
 
         if (stmt->first->kind == EXPR_TUPLE)
         {
-            /* (a, b) = (x, y) usa a faixa de cada parte; senão, qualquer valor */
+            /* [a, b] = (x, y) usa a faixa de cada parte; senão, qualquer valor */
             for (int i = 0; i < stmt->first->arguments.count; i++)
             {
                 Expression *part = stmt->first->arguments.items[i];

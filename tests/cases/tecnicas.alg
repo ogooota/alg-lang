@@ -124,7 +124,7 @@ arestas = {(4, 0, 1), (1, 1, 2), (3, 0, 2), (2, 2, 3), (5, 3, 4), (7, 1, 4)}
 ordenar(arestas)
 d = conjuntos(5)
 custo = 0
-para (peso, a, b) em arestas {
+para [peso, a, b] em arestas {
     se d.unir(a, b) {
         custo += peso
     }

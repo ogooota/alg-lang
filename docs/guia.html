@@ -380,7 +380,7 @@ fn fib(k) {
 <div><h3>Updating values</h3><pre><code class="lang-alg">x += 5      // also -= *= /= %= &amp;= |= ^= &lt;&lt;= &gt;&gt;=
 i++
 i--
-(a, b) = (b, a)   // swap with a tuple</code></pre></div>
+[a, b] = (b, a)   // swap with a tuple</code></pre></div>
 <div><h3>Arrays declared up front</h3><pre><code class="lang-alg">#decl {
     dp[n + 1][m + 1]: int32;
     seen[n];
@@ -466,7 +466,7 @@ for i=0 to n {
 sort(tasks)
 count = 0
 free_at = 0
-for (end, start) in tasks {
+for [end, start] in tasks {
     if start &gt;= free_at {
         count++
         free_at = end
@@ -566,7 +566,7 @@ for i=0 to n {
     read(x)
     count[x] += 1
 }
-for (value, times) in count {
+for [value, times] in count {
     write(value, times)
 }</code></pre></figure>
 <figure class="cpp"><figcaption><strong>C++</strong><span>16 lines</span></figcaption><pre><code class="lang-cpp">#include &lt;bits/stdc++.h&gt;
@@ -661,11 +661,11 @@ dist[0] = 0
 h = heap()
 h.push((0, 0))
 while h.size() &gt; 0 {
-    (d, u) = h.pop()
+    [d, u] = h.pop()
     if d &gt; dist[u] {
         continue
     }
-    for (v, w) in g.neighbors(u) {
+    for [v, w] in g.neighbors(u) {
         if d + w &lt; dist[v] {
             dist[v] = d + w
             h.push((dist[v], v))
@@ -718,7 +718,7 @@ for i=0 to m {
 sort(edges)
 d = dsu(n)
 total = 0
-for (w, u, v) in edges
+for [w, u, v] in edges
     if d.merge(u, v)
         total += w
 write(total)</code></pre></figure>
@@ -782,7 +782,7 @@ int main() {
 <tr><td><code>int dp[N][M]</code> (global)</td><td><code>#decl dp[n][m]: int32;</code></td><td>real size, not the maximum</td></tr>
 <tr><td><code>i++</code>, <code>i--</code></td><td><code>i++</code>, <code>i--</code></td><td>statements only</td></tr>
 <tr><td><code>pair&lt;ll, int&gt;</code></td><td><code>(d, u)</code></td><td>tuples of any size</td></tr>
-<tr><td><code>auto [d, u] = p;</code></td><td><code>(d, u) = p</code></td><td></td></tr>
+<tr><td><code>auto [d, u] = p;</code></td><td><code>[d, u] = p</code></td><td></td></tr>
 <tr><td><code>sort(v.begin(), v.end())</code></td><td><code>sort(v)</code></td><td><code>sort(v, greater)</code> for descending</td></tr>
 <tr><td><code>priority_queue&lt;T, vector&lt;T&gt;, greater&lt;&gt;&gt;</code></td><td><code>heap()</code></td><td>smallest first</td></tr>
 <tr><td><code>queue&lt;int&gt;</code></td><td><code>queue()</code></td><td><code>push</code> / <code>pop</code></td></tr>
@@ -853,7 +853,7 @@ fn fib(k) {
 <div><h3>Atualizar valores</h3><pre><code class="lang-alg">x += 5      // também -= *= /= %= &amp;= |= ^= &lt;&lt;= &gt;&gt;=
 i++
 i--
-(a, b) = (b, a)   // troca com tupla</code></pre></div>
+[a, b] = (b, a)   // troca com tupla</code></pre></div>
 <div><h3>Vetores declarados antes</h3><pre><code class="lang-alg">#decl {
     dp[n + 1][m + 1]: int32;
     visitado[n];
@@ -939,7 +939,7 @@ para i=0 ate n {
 ordenar(tarefas)
 total = 0
 livre = 0
-para (fim, inicio) em tarefas {
+para [fim, inicio] em tarefas {
     se inicio &gt;= livre {
         total++
         livre = fim
@@ -1039,7 +1039,7 @@ para i=0 ate n {
     ler(x)
     cont[x] += 1
 }
-para (valor, vezes) em cont {
+para [valor, vezes] em cont {
     escrever(valor, vezes)
 }</code></pre></figure>
 <figure class="cpp"><figcaption><strong>C++</strong><span>16 linhas</span></figcaption><pre><code class="lang-cpp">#include &lt;bits/stdc++.h&gt;
@@ -1134,11 +1134,11 @@ dist[0] = 0
 h = heap()
 h.inserir((0, 0))
 enquanto h.tam() &gt; 0 {
-    (d, u) = h.remover()
+    [d, u] = h.remover()
     se d &gt; dist[u] {
         continue
     }
-    para (v, w) em g.vizinhos(u) {
+    para [v, w] em g.vizinhos(u) {
         se d + w &lt; dist[v] {
             dist[v] = d + w
             h.inserir((dist[v], v))
@@ -1191,7 +1191,7 @@ para i=0 ate m {
 ordenar(arestas)
 d = conjuntos(n)
 total = 0
-para (w, u, v) em arestas
+para [w, u, v] em arestas
     se d.unir(u, v)
         total += w
 escrever(total)</code></pre></figure>
@@ -1255,7 +1255,7 @@ int main() {
 <tr><td><code>int dp[N][M]</code> (global)</td><td><code>#decl dp[n][m]: int32;</code></td><td>tamanho real, não o máximo</td></tr>
 <tr><td><code>i++</code>, <code>i--</code></td><td><code>i++</code>, <code>i--</code></td><td>só como comando</td></tr>
 <tr><td><code>pair&lt;ll, int&gt;</code></td><td><code>(d, u)</code></td><td>tupla de qualquer tamanho</td></tr>
-<tr><td><code>auto [d, u] = p;</code></td><td><code>(d, u) = p</code></td><td></td></tr>
+<tr><td><code>auto [d, u] = p;</code></td><td><code>[d, u] = p</code></td><td></td></tr>
 <tr><td><code>sort(v.begin(), v.end())</code></td><td><code>ordenar(v)</code></td><td><code>ordenar(v, maior)</code> decrescente</td></tr>
 <tr><td><code>priority_queue&lt;T, vector&lt;T&gt;, greater&lt;&gt;&gt;</code></td><td><code>heap()</code></td><td>menor primeiro</td></tr>
 <tr><td><code>queue&lt;int&gt;</code></td><td><code>fila()</code></td><td><code>enfileirar</code> / <code>desenfileirar</code></td></tr>

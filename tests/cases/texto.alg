@@ -41,7 +41,7 @@ write(saved[0], word)
 freq = map {}
 for w in names
     freq[w] += 1
-for (w, k) in freq
+for [w, k] in freq
     write(w, k)
 write("carol" in freq, "zed" in freq)
 

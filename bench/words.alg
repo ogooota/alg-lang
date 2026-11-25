@@ -7,5 +7,5 @@ for i=0 to n {
     read(word)
     count[word] += 1
 }
-for (w, k) in count
+for [w, k] in count
     write(w, k)

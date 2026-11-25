@@ -300,9 +300,10 @@ struct Statement
     StatementList body;
     StatementList else_body;
     VEC(Declaration) declarations;
-    VEC(char *) parameters; /* S_FUNC: parâmetros; S_FORIN: nomes de (v, w) */
+    VEC(char *) parameters; /* S_FUNC: parâmetros; S_FORIN: nomes de [v, w] */
     Variable *variable;
-    Variable **pattern_variables; /* S_FORIN com (v, w): as variáveis */
+    Variable **pattern_variables; /* S_FORIN com [v, w]: as variáveis */
+    Statement *fallback;          /* S_FOR vindo do for do C: a forma while, se não for inteiro */
 };
 
 StatementList parse(TokenList *tokens, Language language);

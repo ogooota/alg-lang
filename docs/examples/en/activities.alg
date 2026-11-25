@@ -8,7 +8,7 @@ for i=0 to n {
 sort(tasks)
 count = 0
 free_at = 0
-for (end, start) in tasks {
+for [end, start] in tasks {
     if start >= free_at {
         count++
         free_at = end

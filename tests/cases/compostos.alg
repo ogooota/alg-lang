@@ -26,7 +26,7 @@ m = mapa {}
 para k em {3, 1, 3} {
     m[k] += 1
 }
-para (k, c) em m {
+para [k, c] em m {
     escrever(k, c)
 }
 r = 1.5

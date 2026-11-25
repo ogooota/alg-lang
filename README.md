@@ -21,11 +21,11 @@ dist[0] = 0
 h = heap()
 h.push((0, 0))
 while h.size() > 0 {
-    (d, u) = h.pop()
+    [d, u] = h.pop()
     if d > dist[u] {
         continue
     }
-    for (v, w) in g.neighbors(u) {
+    for [v, w] in g.neighbors(u) {
         if d + w < dist[v] {
             dist[v] = d + w
             h.push((dist[v], v))

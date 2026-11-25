@@ -14,11 +14,11 @@ dist[0] = 0
 h = heap()
 h.inserir((0, 0))
 enquanto h.tam() > 0 {
-    (d, u) = h.remover()
+    [d, u] = h.remover()
     se d > dist[u] {
         continue
     }
-    para (v, w) em g.vizinhos(u) {
+    para [v, w] em g.vizinhos(u) {
         se d + w < dist[v] {
             dist[v] = d + w
             h.inserir((dist[v], v))

@@ -8,7 +8,7 @@ para i=0 ate n {
 ordenar(tarefas)
 total = 0
 livre = 0
-para (fim, inicio) em tarefas {
+para [fim, inicio] em tarefas {
     se inicio >= livre {
         total++
         livre = fim

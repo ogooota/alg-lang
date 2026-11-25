@@ -195,7 +195,7 @@ void gen_for_in(TextBuffer *out, Statement *stmt, int depth)
     text_append(out, "}\n");
 }
 
-/* (a, b) = tupla */
+/* [a, b] = tupla */
 void gen_tuple_assignment(TextBuffer *out, Statement *stmt, int depth)
 {
     int temp_id = temp_counter++;

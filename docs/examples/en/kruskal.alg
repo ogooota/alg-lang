@@ -8,7 +8,7 @@ for i=0 to m {
 sort(edges)
 d = dsu(n)
 total = 0
-for (w, u, v) in edges
+for [w, u, v] in edges
     if d.merge(u, v)
         total += w
 write(total)

@@ -1,7 +1,7 @@
 #lang pt
 // tuplas
 p = (3, 2.5)
-(a, b) = p
+[a, b] = p
 escrever(p, a, b, (1, 2) < (1, 3), (2, 0) < (1, 9), (1, 2) == (1, 2))
 
 // ordenar: inteiros, decrescente, fatia, tuplas, reais
@@ -33,7 +33,7 @@ hm = heap(maior)
 hm.inserir((1, 10))
 hm.inserir((3, 30))
 hm.inserir((2, 20))
-(d, u) = hm.remover()
+[d, u] = hm.remover()
 escrever(d, u)
 
 // fila
@@ -50,7 +50,7 @@ para x em {3, 1, 3, 2, 3, 1} {
 }
 escrever(cont[3], cont[7], 2 em cont, 7 em cont, cont.tam())
 cont.remover(2)
-para (k, c) em cont {
+para [k, c] em cont {
     escrever(k, c)
 }
 pos = mapa {}
@@ -90,11 +90,11 @@ fn dijkstra(gr, origem, n) {
     hp = heap()
     hp.inserir((0, origem))
     enquanto hp.tam() > 0 {
-        (du, uu) = hp.remover()
+        [du, uu] = hp.remover()
         se du > dd[uu] {
             continue
         }
-        para (vv, ww) em gr.vizinhos(uu) {
+        para [vv, ww] em gr.vizinhos(uu) {
             se du + ww < dd[vv] {
                 dd[vv] = du + ww
                 hp.inserir((dd[vv], vv))

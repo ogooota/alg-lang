@@ -8,7 +8,7 @@ para i=0 ate m {
 ordenar(arestas)
 d = conjuntos(n)
 total = 0
-para (w, u, v) em arestas
+para [w, u, v] em arestas
     se d.unir(u, v)
         total += w
 escrever(total)

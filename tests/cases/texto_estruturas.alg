@@ -22,7 +22,7 @@ write(q.front(), q.pop(), q.pop())
 nick = map {}
 nick["bob"] = "bobby"
 nick["al"] = "alan" + "!"
-for (k, v) in nick
+for [k, v] in nick
     write(k, v, v.size())
 write(nick["bob"], "al" in nick, "zz" in nick)
 nick.remove("al")
