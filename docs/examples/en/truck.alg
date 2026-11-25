@@ -7,7 +7,7 @@ fn fits(weights, cap, k) {
             ret 0
         }
         if load + w > cap {
-            inc trips
+            trips++
             load = 0
         }
         load += w

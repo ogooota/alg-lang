@@ -10,7 +10,7 @@ total = 0
 livre = 0
 para (fim, inicio) em tarefas {
     se inicio >= livre {
-        inc total
+        total++
         livre = fim
     }
 }

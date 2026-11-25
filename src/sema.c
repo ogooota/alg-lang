@@ -565,6 +565,7 @@ void check_statement(Statement *stmt, int top, int *seen_code)
         check_number(stmt->first);
         loop_depth++;
         check_statements(&stmt->body, 0);
+        check_statements(&stmt->else_body, 0);
         loop_depth--;
         return;
 

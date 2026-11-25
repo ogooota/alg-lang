@@ -49,6 +49,8 @@ no `ios::sync_with_stdio(false)` and no `long long` anywhere.
   array in 1, 2, 4 or 8 bytes depending on the values it can hold.
 - **Safe while practicing, fast when submitting.** Without `-O`, an out-of-bounds index stops with the line number.
   With `-O`, the checks are gone. `--emit-c` prints a single C file you can submit to judges that accept C.
+- **Familiar if you come from C++.** `x++`, `x--`, `+=`, and optional parentheses: `if (x > 0)`, `while (i < n)`,
+  `for (i = 0; i < n; i++)` all work next to the shorter `for i=0 to n` and `for x in v`.
 - **Your language.** Keywords exist in English (`#lang en`) and Portuguese (`#lang pt`); more languages are planned.
 
 ## Speed

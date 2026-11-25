@@ -42,7 +42,7 @@ A divisão não muda o C gerado: o teste de regressão da modularização compar
 |---|---|
 | `STMT_ASSIGN` | `first = second` (`first` pode ser uma tupla) |
 | `STMT_IF` | `se first: body senao: else_body` |
-| `STMT_WHILE` | `enquanto first: body` |
+| `STMT_WHILE` | `enquanto first: body`; `else_body` é o passo do `para (início; cond; passo)` do C, gerado como `for (; cond; ({ passo }))` para rodar também no `continue`. O parser transforma `para (i = a; i < b; i++)` em `STMT_FOR` quando nem `i` nem `b` mudam no corpo (sem atribuição, leitura, método ou chamada de função do usuário) |
 | `STMT_FOR` | `para text=first ate second: body` |
 | `STMT_FOR_IN` | `para text em first: body`, ou `para (parameters) em first: body` |
 | `STMT_RETURN` | `ret first` |

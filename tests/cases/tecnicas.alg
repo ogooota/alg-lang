@@ -23,7 +23,7 @@ para k=0 ate 200 {
         bruta += v[i]
     }
     se p[r] - p[l] != bruta {
-        inc erros
+        erros++
     }
 }
 
@@ -41,7 +41,7 @@ para a=0 ate nl {
                     }
                 }
                 se pm[b][fim] - pm[a][fim] - pm[b][c] + pm[a][c] != bruta {
-                    inc erros
+                    erros++
                 }
             }
         }
@@ -56,14 +56,14 @@ para k=0 ate 300 {
     x = proximo() % 1200 - 600
     primeiro = 0
     enquanto primeiro < o.tam() e o[primeiro] < x {
-        inc primeiro
+        primeiro++
     }
     depois = 0
     enquanto depois < o.tam() e o[depois] <= x {
-        inc depois
+        depois++
     }
     se busca(o, x) != primeiro ou busca(o, x, maior) != depois {
-        inc erros
+        erros++
     }
 }
 escrever("busca ok:", erros == 0)
@@ -96,7 +96,7 @@ para k=0 ate 300 {
         total += w[i]
     }
     se f.soma(l, r) != total ou s_min.consulta(l, r) != menor ou s_max.consulta(l, r) != maior_ ou s_soma.consulta(l, r) != total {
-        inc erros
+        erros++
     }
     // muda uma posição em todas
     i = proximo() % 300
@@ -114,7 +114,7 @@ para k=0 ate 300 {
     l = proximo() % 300
     r = l + 1 + proximo() % (300 - l)
     se r_min.consulta(l, r) != min(v[l..r]) {
-        inc erros
+        erros++
     }
 }
 escrever("rmq ok:", erros == 0, r_min.tam())

@@ -8,13 +8,13 @@
 static const char *KEYWORDS[2][KEYWORD_TIPO - KEYWORD_SE + 1] = {
     {
         "se",   "senao",    "enquanto", "para",  "ate",   "em",         NULL,    "fn",   "ret",
-        "pare", "continue", "e",        "ou",    "nao",   "verdadeiro", "falso", NULL,   "inc",
-        "dec",  "todo",     "existe",   "algum", "uniao", "inter",      "menos", "conj", "tipo",
+        "pare", "continue", "e",        "ou",    "nao",   "verdadeiro", "falso", NULL,   NULL,
+        NULL,  "todo",     "existe",   "algum", "uniao", "inter",      "menos", "conj", "tipo",
     },
     {
         "if",    "else",     "while",  "for",  "to",    "in",    "thr",   "fn",  "ret",
-        "break", "continue", "and",    "or",   "not",   "true",  "false", NULL,  "inc",
-        "dec",   "all",      "exists", "some", "union", "inter", "minus", "set", "type",
+        "break", "continue", "and",    "or",   "not",   "true",  "false", NULL,  NULL,
+        NULL,   "all",      "exists", "some", "union", "inter", "minus", "set", "type",
     },
 };
 

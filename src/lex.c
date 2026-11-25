@@ -17,6 +17,8 @@ static const Spelling MATH_SYMBOLS[] = {
 static const Spelling OPERATORS[] = {
     {"<<=", PUNCT_SHIFT_LEFT_ASSIGN},
     {">>=", PUNCT_SHIFT_RIGHT_ASSIGN},
+    {"++", PUNCT_INCREMENT},
+    {"--", PUNCT_DECREMENT},
     {"+=", PUNCT_PLUS_ASSIGN},
     {"-=", PUNCT_MINUS_ASSIGN},
     {"*=", PUNCT_STAR_ASSIGN},

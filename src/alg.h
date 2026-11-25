@@ -122,6 +122,8 @@ typedef enum
     PUNCT_TILDE,
     PUNCT_SHIFT_LEFT,
     PUNCT_SHIFT_RIGHT,
+    PUNCT_INCREMENT,
+    PUNCT_DECREMENT,
 
     /* atribuição composta, igual ao C (só como comando: x += 1) */
 

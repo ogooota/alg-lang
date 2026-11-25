@@ -648,49 +648,349 @@ static Statement *parse_if(Token *token)
     return stmt;
 }
 
-/** para i=a ate b, para x em v e para (a, b) em v. */
-static Statement *parse_for(Token *token)
+static Statement *parse_simple_statement(Token *token);
+static Statement *make_step(Token *token, Token *operator_token, Expression *target);
+
+/** Diz se o '(' atual abre um for estilo C: tem ';' antes do ')' que o fecha. */
+static int c_style_for_ahead(void)
 {
+    int depth = 0;
+
+    for (int i = position; i < tokens->count; i++)
+    {
+        TokenKind kind = tokens->items[i].kind;
+
+        if (kind == PUNCT_LEFT_PAREN || kind == PUNCT_LEFT_BRACKET || kind == PUNCT_LEFT_BRACE)
+        {
+            depth++;
+        }
+        else if (kind == PUNCT_RIGHT_PAREN || kind == PUNCT_RIGHT_BRACKET ||
+                 kind == PUNCT_RIGHT_BRACE)
+        {
+            if (--depth == 0)
+            {
+                return 0;
+            }
+        }
+        else if ((kind == PUNCT_SEMICOLON && depth == 1) || kind == TOKEN_NEWLINE ||
+                 kind == TOKEN_EOF)
+        {
+            return kind == PUNCT_SEMICOLON;
+        }
+    }
+
+    return 0;
+}
+
+/** Passo do for estilo C: i++, ++i, i--, i += 2, i = i * 2. */
+static Statement *parse_loop_step(void)
+{
+    Token *token = current_token();
+
+    if (accept_token(PUNCT_INCREMENT) || accept_token(PUNCT_DECREMENT))
+    {
+        return make_step(token, token, parse_expression());
+    }
+
+    return parse_simple_statement(token);
+}
+
+/** Diz se a expressão pode mudar o nome: chama função do usuário ou método nele (v.add). */
+static int expression_may_write(Expression *expr, const char *name)
+{
+    if (!expr)
+    {
+        return 0;
+    }
+
+    if ((expr->kind == EXPR_CALL && builtin_of(expr->text, lang) == BUILTIN_NONE) ||
+        (expr->kind == EXPR_METHOD && expr->first->kind == EXPR_NAME &&
+         !strcmp(expr->first->text, name)))
+    {
+        return 1;
+    }
+
+    for (int i = 0; i < expr->arguments.count; i++)
+    {
+        if (expression_may_write(expr->arguments.items[i], name))
+        {
+            return 1;
+        }
+    }
+
+    return expression_may_write(expr->first, name) || expression_may_write(expr->second, name) ||
+           expression_may_write(expr->third, name);
+}
+
+/** Diz se a expressão é o nome ou um padrão (a, b) que o contém. */
+static int names_target(Expression *expr, const char *name)
+{
+    if (expr->kind == EXPR_NAME)
+    {
+        return !strcmp(expr->text, name);
+    }
+
+    for (int i = 0; expr->kind == EXPR_TUPLE && i < expr->arguments.count; i++)
+    {
+        if (names_target(expr->arguments.items[i], name))
+        {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+/** Diz se o ler(...) escreve no nome: ler(n), ler(v[i]) e ler(v[0..k]) escrevem em n e v. */
+static int read_writes(Expression *call, const char *name)
+{
+    for (int i = 0; i < call->arguments.count; i++)
+    {
+        Expression *target = call->arguments.items[i];
+
+        while (target->kind == EXPR_INDEX || target->kind == EXPR_SLICE)
+        {
+            target = target->first;
+        }
+
+        if (names_target(target, name))
+        {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+/** Diz se algum comando pode mudar o nome (atribuição, leitura, laço, função ou método). */
+static int statements_may_write(StatementList *statements, const char *name)
+{
+    for (int i = 0; i < statements->count; i++)
+    {
+        Statement *stmt = statements->items[i];
+        Builtin builtin = stmt->kind == STMT_EXPR && stmt->first->kind == EXPR_CALL
+                              ? builtin_of(stmt->first->text, lang)
+                              : BUILTIN_NONE;
+
+        if (stmt->kind == STMT_DECL || stmt->kind == STMT_FUNCTION ||
+            (stmt->kind == STMT_ASSIGN && names_target(stmt->first, name)) ||
+            ((builtin == BUILTIN_LER || builtin == BUILTIN_LER_LINHA) &&
+             read_writes(stmt->first, name)) ||
+            (stmt->text && !strcmp(stmt->text, name)))
+        {
+            return 1;
+        }
+
+        for (int j = 0; j < stmt->parameters.count; j++)
+        {
+            if (!strcmp(stmt->parameters.items[j], name))
+            {
+                return 1;
+            }
+        }
+
+        if (expression_may_write(stmt->first, name) || expression_may_write(stmt->second, name) ||
+            expression_may_write(stmt->third, name) || statements_may_write(&stmt->body, name) ||
+            statements_may_write(&stmt->else_body, name))
+        {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+/** Diz se o limite do for não muda no corpo: números, nomes, contas e v.size(). */
+static int bound_is_invariant(Expression *bound, StatementList *body)
+{
+    switch (bound->kind)
+    {
+    case EXPR_INT:
+        return 1;
+
+    case EXPR_NAME:
+        return !statements_may_write(body, bound->text);
+
+    case EXPR_BINARY:
+        return bound_is_invariant(bound->first, body) && bound_is_invariant(bound->second, body);
+
+    case EXPR_CALL:
+        return builtin_of(bound->text, lang) == BUILTIN_TAMANHO &&
+               bound_is_invariant(bound->arguments.items[0], body);
+
+    default:
+        return 0;
+    }
+}
+
+/**
+ * for (i = a; i < b; i++) com i e b fixos no corpo vira o for nativo (i=a to b), que a
+ * análise de faixa entende; devolve NULL se o laço não tem essa forma.
+ */
+static Statement *as_counting_for(Token *token, Statement *init, Expression *condition,
+                                  Statement *step, StatementList *body)
+{
+    if (!init || !step || init->kind != STMT_ASSIGN || init->first->kind != EXPR_NAME ||
+        condition->kind != EXPR_BINARY ||
+        (condition->operation != PUNCT_LESS && condition->operation != PUNCT_LESS_EQUAL) ||
+        !names_target(condition->first, init->first->text) || step->kind != STMT_ASSIGN ||
+        !names_target(step->first, init->first->text) || step->second->operation != PUNCT_PLUS ||
+        step->second->second->kind != EXPR_INT || step->second->second->int_value != 1)
+    {
+        return NULL;
+    }
+
+    const char *name = init->first->text;
+
+    if (expression_may_write(init->second, name) || statements_may_write(body, name) ||
+        !bound_is_invariant(condition->second, body))
+    {
+        return NULL;
+    }
+
+    Statement *loop = new_statement(STMT_FOR, token);
+    loop->text = init->first->text;
+    loop->first = init->second;
+    loop->second = condition->second;
+    loop->inclusive = condition->operation == PUNCT_LESS_EQUAL;
+    loop->body = *body;
+    return loop;
+}
+
+/**
+ * for (início; condição; passo) como no C: o início vira um comando antes do laço,
+ * e o laço é um while cujo else_body guarda o passo (roda também no continue).
+ */
+static void parse_c_style_for(Token *token, StatementList *out)
+{
+    Statement *init = NULL;
+    Statement *step = NULL;
+    Expression *condition;
+
+    if (!at_token(PUNCT_SEMICOLON))
+    {
+        init = parse_simple_statement(current_token());
+    }
+
+    expect_token(PUNCT_SEMICOLON);
+
+    if (at_token(PUNCT_SEMICOLON))
+    {
+        condition = new_expression(EXPR_INT, token);
+        condition->int_value = 1;
+    }
+    else
+    {
+        condition = parse_expression();
+    }
+
+    expect_token(PUNCT_SEMICOLON);
+
+    if (!at_token(PUNCT_RIGHT_PAREN))
+    {
+        step = parse_loop_step();
+    }
+
+    expect_token(PUNCT_RIGHT_PAREN);
+
+    StatementList body = {0};
+    parse_block(&body);
+
+    Statement *counting = as_counting_for(token, init, condition, step, &body);
+
+    if (counting)
+    {
+        PUSH(*out, counting);
+        return;
+    }
+
+    Statement *loop = new_statement(STMT_WHILE, token);
+    loop->first = condition;
+    loop->body = body;
+
+    if (step)
+    {
+        PUSH(loop->else_body, step);
+    }
+
+    if (init)
+    {
+        PUSH(*out, init);
+    }
+
+    PUSH(*out, loop);
+}
+
+/** Nomes de (a, b) no for, depois do '(' já consumido, até o ')'. */
+static void parse_for_pattern(Statement *stmt)
+{
+    do
+    {
+        PUSH(stmt->parameters, expect_token(TOKEN_NAME)->text);
+    } while (accept_token(PUNCT_COMMA));
+
+    expect_token(PUNCT_RIGHT_PAREN);
+}
+
+/**
+ * para i=a ate b, para x em v, para (a, b) em v; com parênteses opcionais em volta
+ * (for (i=0 to n), for (x in v), for ((a, b) in v)) e o for do C (for (i=0; i<n; i++)).
+ */
+static void parse_for(Token *token, StatementList *out)
+{
+    if (at_token(PUNCT_LEFT_PAREN) && c_style_for_ahead())
+    {
+        position++;
+        parse_c_style_for(token, out);
+        return;
+    }
+
+    /* for (a, b) in v: o parêntese é o padrão de tupla, não o do for */
+    int tuple_outside = at_token(PUNCT_LEFT_PAREN) &&
+                        tokens->items[position + 1].kind == TOKEN_NAME &&
+                        tokens->items[position + 2].kind == PUNCT_COMMA;
+    int parenthesized = !tuple_outside && accept_token(PUNCT_LEFT_PAREN);
+
     if (at_token(KEYWORD_TODO) || at_token(KEYWORD_ALGUM))
     {
         fail_unimplemented(current_token());
     }
 
-    /* para (v, w) em ... */
-    if (accept_token(PUNCT_LEFT_PAREN))
-    {
-        Statement *stmt = new_statement(STMT_FOR_IN, token);
-
-        do
-        {
-            PUSH(stmt->parameters, expect_token(TOKEN_NAME)->text);
-        } while (accept_token(PUNCT_COMMA));
-
-        expect_token(PUNCT_RIGHT_PAREN);
-        expect_token(KEYWORD_EM);
-        stmt->first = parse_expression();
-        parse_block(&stmt->body);
-        return stmt;
-    }
-
-    Token *variable_token = expect_token(TOKEN_NAME);
     Statement *stmt;
 
-    if (accept_token(KEYWORD_EM))
+    if (accept_token(PUNCT_LEFT_PAREN))
     {
         stmt = new_statement(STMT_FOR_IN, token);
+        parse_for_pattern(stmt);
+        expect_token(KEYWORD_EM);
         stmt->first = parse_expression();
     }
     else
     {
-        stmt = new_statement(STMT_FOR, token);
-        expect_token(PUNCT_ASSIGN);
-        parse_range_tail(&stmt->first, &stmt->second, &stmt->inclusive);
+        Token *variable_token = expect_token(TOKEN_NAME);
+
+        if (accept_token(KEYWORD_EM))
+        {
+            stmt = new_statement(STMT_FOR_IN, token);
+            stmt->first = parse_expression();
+        }
+        else
+        {
+            stmt = new_statement(STMT_FOR, token);
+            expect_token(PUNCT_ASSIGN);
+            parse_range_tail(&stmt->first, &stmt->second, &stmt->inclusive);
+        }
+
+        stmt->text = variable_token->text;
     }
 
-    stmt->text = variable_token->text;
+    if (parenthesized)
+    {
+        expect_token(PUNCT_RIGHT_PAREN);
+    }
+
     parse_block(&stmt->body);
-    return stmt;
+    PUSH(*out, stmt);
 }
 
 /* f(x) = corpo  vira  fn f(x): ret corpo */
@@ -806,14 +1106,14 @@ static Statement *make_compound_assignment(Token *token, Expression *target)
     return make_update(token, operator_token, operation, target, parse_expression());
 }
 
-/** inc x / dec x: soma ou subtrai 1 (o ++ e o -- do C). */
-static Statement *parse_step(Token *token)
+/** x++ / ++x / x-- / --x: soma ou subtrai 1 (só como comando, como o x += 1). */
+static Statement *make_step(Token *token, Token *operator_token, Expression *target)
 {
-    Expression *target = parse_expression();
-    Expression *one = new_expression(EXPR_INT, token);
+    Expression *one = new_expression(EXPR_INT, operator_token);
 
     one->int_value = 1;
-    return make_update(token, token, token->kind == KEYWORD_INC ? PUNCT_PLUS : PUNCT_MINUS, target,
+    return make_update(token, operator_token,
+                       operator_token->kind == PUNCT_INCREMENT ? PUNCT_PLUS : PUNCT_MINUS, target,
                        one);
 }
 
@@ -828,11 +1128,26 @@ static Statement *parse_simple_statement(Token *token)
         fail_at(token->line, token->column, "função se declara com 'fn': fn nome(a, b):");
     }
 
+    if (token->kind == TOKEN_NAME && (!strcmp(token->text, "inc") || !strcmp(token->text, "dec")) &&
+        tokens->items[position + 1].kind == TOKEN_NAME)
+    {
+        fail_at(token->line, token->column, "'%s x' agora é x%s", token->text,
+                token->text[0] == 'i' ? "++" : "--");
+    }
+
     Expression *expr = parse_expression();
 
     if (compound_operator(current_token()->kind))
     {
         return make_compound_assignment(token, expr);
+    }
+
+    if (at_token(PUNCT_INCREMENT) || at_token(PUNCT_DECREMENT))
+    {
+        Token *operator_token = current_token();
+
+        position++;
+        return make_step(token, operator_token, expr);
     }
 
     if (!accept_token(PUNCT_ASSIGN))
@@ -881,8 +1196,8 @@ static void end_statement(void)
 {
     accept_token(PUNCT_SEMICOLON);
 
-    /* um comando pode terminar logo antes do '}' (if x { y = 1 }) */
-    if (!at_token(PUNCT_RIGHT_BRACE))
+    /* um comando pode terminar logo antes do '}' (if x { y = 1 }) ou do else (if (x) a else b) */
+    if (!at_token(PUNCT_RIGHT_BRACE) && !at_token(KEYWORD_SENAO))
     {
         expect_token(TOKEN_NEWLINE);
     }
@@ -920,7 +1235,7 @@ static void parse_statement(StatementList *out)
 
     case KEYWORD_PARA:
         position++;
-        PUSH(*out, parse_for(token));
+        parse_for(token, out);
         return;
 
     case KEYWORD_RET:
@@ -936,10 +1251,10 @@ static void parse_statement(StatementList *out)
         PUSH(*out, stmt);
         return;
 
-    case KEYWORD_INC:
-    case KEYWORD_DEC:
+    case PUNCT_INCREMENT:
+    case PUNCT_DECREMENT:
         position++;
-        PUSH(*out, parse_step(token));
+        PUSH(*out, make_step(token, token, parse_expression()));
         end_statement();
         return;
 

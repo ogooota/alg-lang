@@ -7,7 +7,7 @@ fn cabe(pesos, cap, k) {
             ret 0
         }
         se carga + p > cap {
-            inc viagens
+            viagens++
             carga = 0
         }
         carga += p

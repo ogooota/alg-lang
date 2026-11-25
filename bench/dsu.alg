@@ -7,6 +7,6 @@ for i=0 to q {
     if t == 1
         d.merge(u, v)
     else if d.same(u, v)
-        inc same
+        same++
 }
 write(same, d.groups())

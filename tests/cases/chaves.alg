@@ -21,7 +21,7 @@ para x em v {
 escrever(x, maior_de(x, 2))
 }
 i = 0
-enquanto i < 2 { inc i; }
+enquanto i < 2 { i++; }
 se i == 2 {
     escrever("i", i)
 } senao se i == 3 {

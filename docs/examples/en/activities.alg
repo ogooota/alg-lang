@@ -10,7 +10,7 @@ count = 0
 free_at = 0
 for (end, start) in tasks {
     if start >= free_at {
-        inc count
+        count++
         free_at = end
     }
 }

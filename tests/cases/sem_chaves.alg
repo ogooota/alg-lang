@@ -31,6 +31,6 @@ if x > 0
 
 i = 0
 while i < 3
-    inc i
+    i++
 write(i)
 for k=0 to 3 write(k)

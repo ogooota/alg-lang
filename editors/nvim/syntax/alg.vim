@@ -10,7 +10,7 @@ syntax match algLang "\(#lang\s\+\)\@<=\(pt\|en\)\>"
 " controle de fluxo
 syntax keyword algConditional se senao if else
 syntax keyword algRepeat enquanto para ate em thr while for to in
-syntax keyword algStatement ret pare continue break inc dec
+syntax keyword algStatement ret pare continue break
 syntax keyword algKeyword fn nextgroup=algFuncName skipwhite
 syntax match algFuncName "\h\w*" contained
 

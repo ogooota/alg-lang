@@ -14,13 +14,13 @@ y <<= 2
 y >>= 1
 escrever(y)
 i = 0
-inc i
-inc i
-dec i
+i++
+i++
+i--
 escrever(i)
 v = {1, 2, 3}
 v[1] += 10
-inc v[2]
+v[2]++
 escrever(v)
 m = mapa {}
 para k em {3, 1, 3} {

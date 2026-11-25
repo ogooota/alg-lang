@@ -253,8 +253,18 @@ void gen_loop(TextBuffer *out, Statement *stmt, int depth)
     if (stmt->kind == STMT_WHILE)
     {
         indent(out, depth);
-        text_append(out, "while (");
+        text_append(out, stmt->else_body.count ? "for (; " : "while (");
         gen_expression(out, stmt->first);
+
+        /* passo do for estilo C (else_body) como expressão do GNU C: roda também no continue */
+        if (stmt->else_body.count)
+        {
+            text_append(out, "; ({\n");
+            gen_statements(out, &stmt->else_body, depth + 1);
+            indent(out, depth);
+            text_append(out, "})");
+        }
+
         text_append(out, ")\n");
         gen_block(out, &stmt->body, depth);
         return;

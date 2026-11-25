@@ -24,6 +24,8 @@ make test                     # roda tests/cases/*.alg
 | Blocos | chaves `{ }`, com a chave aberta na mesma linha (`se x {`) ou na seguinte; indentação livre; `se x { y = 1 }` em uma linha também vale. Como em C, corpo de um comando só dispensa as chaves (`para i=0 ate n` ⏎ `se i > 5` ⏎ `escrever(i)`), e o `senao` fica com o `se` mais próximo | ✅ |
 | Comentário | `//` | ✅ |
 | `;` | opcional no fim de qualquer comando (`x = 3;`), para quem está acostumado com C | ✅ |
+| Parênteses do C | opcionais em `se (x > 0)`, `enquanto (i < n)` e `para (...)`: as duas formas valem, com ou sem. Com parênteses, o corpo de um comando só cabe na mesma linha: `se (x) escrever(x) senao escrever(0)` | ✅ |
+| `para` | `para i=0 ate n`, `para i=0 ate em n` (en: `thr`), `para x em v`, `para (a, b) em v`; com parênteses: `para (i=0 ate n)`, `para (x em v)`, `para ((a, b) em v)`; e o do C: `para (i = 0; i < n; i++)`, com qualquer condição e passo (`i--`, `i += 2`, `i *= 2`; partes vazias em `para (;;)`) | ✅ |
 | Função | `fn nome(a, b):` com bloco, ou `f(x) = expr` em uma linha; `ret` devolve (iguais em pt e en) | ✅ |
 | Tipos | estáticos e inferidos; `int` (64 bits), `real`, `int32` — iguais em pt e en | ✅ |
 | `: int32` | `#decl dp[n][m]: int32` guarda em 32 bits; valor que não cabe é erro (sem `-O`) | ✅ |
@@ -37,7 +39,7 @@ make test                     # roda tests/cases/*.alg
 | Fatia | enxerga os mesmos dados (view); `copia(...)` faz cópia | ✅ |
 | Divisão | `/` entre inteiros arredonda para baixo; `%` nunca é negativo | ✅ |
 | Lógica | `e` / `ou` / `nao`; bit a bit `&` `\|` `^` `~` `<<` `>>` | ✅ |
-| Atualização | `+=` `-=` `*=` `/=` `%=` `&=` `\|=` `^=` `<<=` `>>=` (iguais ao C); `inc x` / `dec x` no lugar de `++` / `--` (iguais em pt e en); só como comando, nunca dentro de expressão | ✅ |
+| Atualização | `+=` `-=` `*=` `/=` `%=` `&=` `\|=` `^=` `<<=` `>>=` (iguais ao C); `x++` / `x--` (também `++x` / `--x`); só como comando, nunca dentro de expressão | ✅ |
 | Precedência | bit a bit liga mais forte que comparação (`x & 1 == 0` funciona) | ✅ |
 | Funções | `fn f(x):` + `ret`, ou `f(x) = expr`; tipos inferidos pelas chamadas | ✅ |
 | Escopo | atribuir a uma global dentro de função altera a global; a variável do `para` dentro de função é sempre local | ✅ |
@@ -63,7 +65,7 @@ make test                     # roda tests/cases/*.alg
 | Grafo | `grafo(n)`, `grafo(n, dirigido)`; `g.aresta(u, v[, peso])`; `para v em g.vizinhos(u)`, `para (v, w) em g.vizinhos(u)` | ✅ |
 | Registros | `tipo Aresta: u; v; peso` | ⏳ |
 | Técnicas nativas | `prefixo`, `busca`, `mdc`, `mmc`, `potmod`, `crivo`, `conjuntos`, `fenwick`, `segtree`, `rmq` (seção abaixo) | ✅ |
-| Adiado | `rep(ação, parada)`, passo/decrescente no `para`, tradutor pt↔en, compressão de coordenadas | — |
+| Adiado | `rep(ação, parada)`, tradutor pt↔en, compressão de coordenadas | — |
 
 ## O que já dá para escrever (marco 1)
 
@@ -104,6 +106,9 @@ para i=0 ate n { }      // 0..n-1
 para i=1 ate em n { }   // 1..n
 para x em v { }         // elementos
 para linha em grid { }  // linhas (vetor 1D)
+para (i = n - 1; i >= 0; i--) { }   // como no C
+se (x > 0) escrever(x)  // parênteses opcionais
+i++
 
 soma(v)  max(v)  min(v)  min(a, b, c)
 soma(i * i para i=0 ate n)
