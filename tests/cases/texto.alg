@@ -10,8 +10,8 @@ for i=0 to 26
     count.add(0)
 for c in word
     count[c - 'a'] += 1
-write(word, len(word), count[0], count[1])
-write(word[0], word[len(word) - 1], word[1..3])
+write(word, word.size(), count[0], count[1])
+write(word[0], word[word.size() - 1], word[1..3])
 if word[0] == 'b'
     write("starts with b")
 
@@ -21,7 +21,7 @@ s[0] = 'x'
 s.add('d')
 s.add("ef")
 t = s + "!" + 'z'
-write(s, t, len(t), s < t, "abc" < "abd", "ab" < "abc", s == "xbcdef")
+write(s, t, t.size(), s < t, "abc" < "abd", "ab" < "abc", s == "xbcdef")
 write(str(42) + "/" + str(-7), str(2.5))
 answer = ""
 for i=0 to 5
@@ -50,4 +50,4 @@ read(m)
 read_line(line)
 write(line)
 read_line(other)
-write(other, len(other))
+write(other, other.size())

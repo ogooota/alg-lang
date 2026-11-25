@@ -13,7 +13,7 @@ para i=0 ate n {
 dist[0] = 0
 proximos = fila()
 proximos.enfileirar(0)
-enquanto tam(proximos) > 0 {
+enquanto proximos.tam() > 0 {
     u = proximos.desenfileirar()
     para v em g.vizinhos(u) {
         se dist[v] == -1 {

@@ -55,11 +55,11 @@ ordenar(o)
 para k=0 ate 300 {
     x = proximo() % 1200 - 600
     primeiro = 0
-    enquanto primeiro < tam(o) e o[primeiro] < x {
+    enquanto primeiro < o.tam() e o[primeiro] < x {
         inc primeiro
     }
     depois = 0
-    enquanto depois < tam(o) e o[depois] <= x {
+    enquanto depois < o.tam() e o[depois] <= x {
         inc depois
     }
     se busca(o, x) != primeiro ou busca(o, x, maior) != depois {
@@ -72,7 +72,7 @@ escrever("busca ok:", erros == 0)
 escrever(mdc(12, 18), mdc(-12, 18), mdc(0, 5), mmc(4, 6), mmc(0, 3))
 escrever(potmod(2, 10, 1000), potmod(-2, 3, 7), potmod(3, 0, 5), potmod(123456789, 1000000006, 1000000007))
 primos = crivo(30)
-escrever(primos, tam(crivo(100000)))
+escrever(primos, crivo(100000).tam())
 
 // fenwick e segtree contra vetor comum, com mudanças
 f = fenwick(300)
@@ -117,7 +117,7 @@ para k=0 ate 300 {
         inc erros
     }
 }
-escrever("rmq ok:", erros == 0, tam(r_min))
+escrever("rmq ok:", erros == 0, r_min.tam())
 
 // union-find: Kruskal
 arestas = {(4, 0, 1), (1, 1, 2), (3, 0, 2), (2, 2, 3), (5, 3, 4), (7, 1, 4)}

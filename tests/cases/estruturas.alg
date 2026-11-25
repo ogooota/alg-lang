@@ -25,8 +25,8 @@ h = heap()
 para x em {5, 1, 4, 2} {
     h.inserir(x)
 }
-escrever(h.topo(), tam(h))
-enquanto tam(h) > 0 {
+escrever(h.topo(), h.tam())
+enquanto h.tam() > 0 {
     escrever(h.remover())
 }
 hm = heap(maior)
@@ -41,14 +41,14 @@ f = fila()
 para i=0 ate 5 {
     f.enfileirar(i * i)
 }
-escrever(f.desenfileirar(), f.frente(), tam(f))
+escrever(f.desenfileirar(), f.frente(), f.tam())
 
 // mapa: contagem, em, remover, percorrer em ordem
 cont = mapa {}
 para x em {3, 1, 3, 2, 3, 1} {
     cont[x] = cont[x] + 1
 }
-escrever(cont[3], cont[7], 2 em cont, 7 em cont, tam(cont))
+escrever(cont[3], cont[7], 2 em cont, 7 em cont, cont.tam())
 cont.remover(2)
 para (k, c) em cont {
     escrever(k, c)
@@ -67,7 +67,7 @@ dist = {-1, -1, -1, -1, -1, -1}
 dist[0] = 0
 q = fila()
 q.enfileirar(0)
-enquanto tam(q) > 0 {
+enquanto q.tam() > 0 {
     x = q.desenfileirar()
     para y em g.vizinhos(x) {
         se dist[y] == -1 {
@@ -89,7 +89,7 @@ fn dijkstra(gr, origem, n) {
     dd[origem] = 0
     hp = heap()
     hp.inserir((0, origem))
-    enquanto tam(hp) > 0 {
+    enquanto hp.tam() > 0 {
         (du, uu) = hp.remover()
         se du > dd[uu] {
             continue

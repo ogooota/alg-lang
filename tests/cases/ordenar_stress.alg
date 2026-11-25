@@ -8,7 +8,7 @@ fn proximo() {
 }
 
 fn insercao(v) {
-    para i=1 ate tam(v) {
+    para i=1 ate v.tam() {
         x = v[i]
         j = i - 1
         enquanto j >= 0 e v[j] > x {
@@ -20,7 +20,7 @@ fn insercao(v) {
 }
 
 fn iguais(a, b) {
-    para i=0 ate tam(a) {
+    para i=0 ate a.tam() {
         se a[i] != b[i] {
             ret 0
         }

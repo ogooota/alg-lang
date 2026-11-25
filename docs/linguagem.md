@@ -84,7 +84,7 @@ v = {}                  // vetor vazio
 w = {1, 2, 3}
 v.adicionar(4)
 u = v.remover_ultimo()
-tam(v)
+v.tam()
 copia(v[1..3])
 
 se x > 0 e nao (x == 3) {
@@ -130,7 +130,7 @@ Uma string é um vetor de caracteres que pode ser alterado no lugar.
 | literal | `"abc"` | `"abc"` |
 | caractere | `'a'`, `'\n'`; `s[i]` devolve um caractere | igual |
 | conta com caractere | `c - 'a'` é inteiro; `s[i] = 'a' + 2` grava o caractere | igual |
-| tamanho, fatia, cópia | `len(s)`, `s[i..j]` (view), `copy(s)` | `tam(s)`, `s[i..j]`, `copia(s)` |
+| tamanho, fatia, cópia | `s.size()`, `s[i..j]` (view), `copy(s)` | `s.tam()`, `s[i..j]`, `copia(s)` |
 | comparar | `==`, `!=`, `<`, `<=`, `>`, `>=` (ordem do dicionário, por byte) | igual |
 | juntar | `s + t` (nova string), `s + c` | igual |
 | acrescentar | `s.add(c)`, `s.add(t)` (no fim, O(1) amortizado) | `s.adicionar(...)` |
@@ -155,7 +155,7 @@ Técnicas que aparecem em quase toda maratona viram parte da linguagem: menos c�
 | pt | en | O que faz | Custo |
 |---|---|---|---|
 | `prefixo(v)` | `prefix(v)` | vetor `P` de tamanho `n + 1` com `P[i] = v[0] + ... + v[i-1]`; soma de `v[l..r)` é `P[r] - P[l]`. Em matriz `n × m`, devolve o prefixo 2D `(n+1) × (m+1)` | O(n) |
-| `busca(v, x)` | `search(v, x)` | em vetor ordenado, primeira posição com `v[i] >= x` (`tam(v)` se não houver) | O(log n) |
+| `busca(v, x)` | `search(v, x)` | em vetor ordenado, primeira posição com `v[i] >= x` (`v.tam()` se não houver) | O(log n) |
 | `busca(v, x, maior)` | `search(v, x, greater)` | primeira posição com `v[i] > x` | O(log n) |
 | `mdc(a, b)` | `gcd(a, b)` | máximo divisor comum (sempre ≥ 0) | O(log) |
 | `mmc(a, b)` | `lcm(a, b)` | mínimo múltiplo comum | O(log) |
@@ -173,7 +173,7 @@ Técnicas que aparecem em quase toda maratona viram parte da linguagem: menos c�
 
 Detalhes:
 - Os nomes são nativos: um programa não pode ter função própria chamada `busca`, `prefixo` etc.
-- `tam(x)` funciona em todas: número de elementos (`n`).
+- `x.tam()` (`x.size()`) funciona em todas: número de elementos (`n`).
 - Fenwick e segtree guardam inteiros de 64 bits ou reais, conforme os valores usados.
 - `consulta(l, r)` com intervalo vazio (`l >= r`) é erro com a linha (sem `-O`).
 - Os vetores devolvidos por `prefixo` e `crivo` são sempre de 64 bits: a análise de faixa não os estreita.
@@ -292,3 +292,4 @@ Todo C do projeto segue estas regras (o `.clang-format` cuida da formatação; `
 - **Contar primos sem listar**: função nativa que devolve quantos primos existem `≤ n` sem montar o vetor (algoritmo de Lucy_Hedgehog / Meissel–Lehmer, O(n^(3/4)) ou melhor). Responde n = 10¹¹ em milissegundos, onde `crivo(n)` nem caberia na memória. Nome a decidir (proposta: `contaprimos(n)` / `count_primes(n)`).
 - **Mensagens de erro em inglês**: hoje os erros do compilador (`fail_at` em `src/lex.c`, `src/parse.c`, `src/sema.c`) e do runtime (`runtime_error` em `rt/*.h`) saem só em português. Com `#lang en` (a língua principal), devem sair em inglês. Cabe na mesma tabela de idiomas do item acima.
 - **Strings no guia**: o `docs/guia.html` ainda não tem um exemplo de texto (`s[i]`, `'a'`, `+`, `.add(c)`, `ler_linha`). Adicionar um exemplo testado em `docs/examples/` e gerar o guia de novo com `docs/build_guide.py`.
+- **Tipagem forte opcional**: a inferência continua sendo o padrão, mas deve ser *possível* (nunca obrigatório) escrever o tipo para deixar a intenção clara e o compilador conferir. Exemplos: dizer que algo é vetor com `{}` (`{int}`, `{{real}}`), que é mapa com `map {}` (`map {str: int}`), e o mesmo para `heap`, `queue`, `graph`, tupla `(int, real)` e `str`. Vale em `#decl`, em parâmetros de função e no retorno; um valor que não bate com o tipo escrito é erro de compilação com a linha. Sintaxe exata a decidir.

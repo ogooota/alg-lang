@@ -605,7 +605,7 @@ for i=0 to n {
 dist[0] = 0
 pending = queue()
 pending.push(0)
-while len(pending) &gt; 0 {
+while pending.size() &gt; 0 {
     u = pending.pop()
     for v in g.neighbors(u) {
         if dist[v] == -1 {
@@ -662,7 +662,7 @@ for i=0 to n {
 dist[0] = 0
 h = heap()
 h.push((0, 0))
-while len(h) &gt; 0 {
+while h.size() &gt; 0 {
     (d, u) = h.pop()
     if d &gt; dist[u] {
         continue
@@ -1079,7 +1079,7 @@ para i=0 ate n {
 dist[0] = 0
 proximos = fila()
 proximos.enfileirar(0)
-enquanto tam(proximos) &gt; 0 {
+enquanto proximos.tam() &gt; 0 {
     u = proximos.desenfileirar()
     para v em g.vizinhos(u) {
         se dist[v] == -1 {
@@ -1136,7 +1136,7 @@ para i=0 ate n {
 dist[0] = 0
 h = heap()
 h.inserir((0, 0))
-enquanto tam(h) &gt; 0 {
+enquanto h.tam() &gt; 0 {
     (d, u) = h.remover()
     se d &gt; dist[u] {
         continue
@@ -1303,7 +1303,7 @@ int main() {
     const ALG = {
       flow: ["se", "senao", "enquanto", "para", "ate", "em", "ret", "pare", "continue", "inc", "dec", "if", "else", "while", "for", "to", "in", "thr", "break"],
       kw: ["fn", "e", "ou", "nao", "and", "or", "not", "verdadeiro", "falso", "true", "false", "INF", "maior", "dirigido", "greater", "directed"],
-      bi: ["ler", "escrever", "tamanho", "copia", "soma", "min", "max", "ordenar", "heap", "fila", "grafo", "mapa", "read", "write", "len", "tam", "sum", "sort", "queue", "graph", "map", "copy", "prefix", "prefixo", "search", "busca", "gcd", "lcm", "mdc", "mmc", "powmod", "potmod", "sieve", "crivo", "dsu", "conjuntos", "fenwick", "segtree", "rmq"],
+      bi: ["ler", "escrever", "copia", "soma", "min", "max", "ordenar", "heap", "fila", "grafo", "mapa", "read", "write", "sum", "sort", "queue", "graph", "map", "copy", "prefix", "prefixo", "search", "busca", "gcd", "lcm", "mdc", "mmc", "powmod", "potmod", "sieve", "crivo", "dsu", "conjuntos", "fenwick", "segtree", "rmq"],
       ty: ["int", "int32", "real"],
     };
     const CPP = {

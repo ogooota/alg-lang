@@ -1,4 +1,4 @@
 #lang en
 read(n)
 p = sieve(n)
-write(len(p), sum(p))
+write(p.size(), sum(p))

@@ -9,4 +9,4 @@ melhor = 0
 for (k, c) in cont {
     melhor = max(melhor, c)
 }
-write(len(cont), melhor)
+write(cont.size(), melhor)

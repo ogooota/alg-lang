@@ -15,7 +15,7 @@ for (k, v) in m {
 // remover durante o laço não muda as chaves percorridas
 for (k, v) in m
     m.remove(k + 1)
-write(len(m))
+write(m.size())
 
 t = map {}
 t[(2, 1)] = 5

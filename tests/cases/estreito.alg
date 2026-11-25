@@ -38,7 +38,7 @@ escrever(cont[0], cont[299])
 
 // mesma função recebendo dois vetores: o segundo recebe valores grandes
 fn enche(w, valor) {
-    para i=0 ate tam(w) {
+    para i=0 ate w.tam() {
         w[i] = valor
     }
 }

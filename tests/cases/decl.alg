@@ -48,7 +48,7 @@ fn desce(k) {
 escrever(desce(1000000))
 
 fn zera(w) {
-    para i=0 ate tam(w) {
+    para i=0 ate w.tam() {
         w[i] = 0
     }
 }

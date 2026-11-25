@@ -16,7 +16,7 @@ v = {
     3, 1,
     2
 }
-se tam(v) == 3 { escrever("três") }
+se v.tam() == 3 { escrever("três") }
 para x em v {
 escrever(x, maior_de(x, 2))
 }

@@ -158,6 +158,13 @@ static Expression *parse_call(Token *name_token)
     Expression *expr = new_expression(EXPR_CALL, name_token);
 
     expr->text = name_token->text;
+
+    if (builtin_of(expr->text, lang) == BUILTIN_TAMANHO)
+    {
+        fail_at(name_token->line, name_token->column, "tamanho é método: escreva v.%s()",
+                expr->text);
+    }
+
     expect_token(PUNCT_LEFT_PAREN);
 
     if (!at_token(PUNCT_RIGHT_PAREN))
@@ -333,6 +340,16 @@ static Expression *parse_postfix(void)
             expect_token(PUNCT_LEFT_PAREN);
             parse_expression_list(&method_call->arguments, PUNCT_RIGHT_PAREN);
             expect_token(PUNCT_RIGHT_PAREN);
+
+            /* v.size() vira a chamada nativa de tamanho; dsu.size(x) tem argumento e segue método */
+            if (method_call->arguments.count == 0 &&
+                builtin_of(method_call->text, lang) == BUILTIN_TAMANHO)
+            {
+                method_call->kind = EXPR_CALL;
+                PUSH(method_call->arguments, expr);
+                method_call->first = NULL;
+            }
+
             expr = method_call;
         }
         else

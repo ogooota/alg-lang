@@ -46,7 +46,7 @@ const char *keyword_spelling(TokenKind kind)
 static const char *BUILTIN_NAMES[][2] = {
     [BUILTIN_LER] = {"ler", "read"},
     [BUILTIN_ESCREVER] = {"escrever", "write"},
-    [BUILTIN_TAMANHO] = {"tam", "len"},
+    [BUILTIN_TAMANHO] = {"tam", "size"},
     [BUILTIN_COPIA] = {"copia", "copy"},
     [BUILTIN_SOMA] = {"soma", "sum"},
     [BUILTIN_MIN] = {"min", "min"},

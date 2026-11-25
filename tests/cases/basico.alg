@@ -24,11 +24,11 @@ para x em a {
     }
 }
 escrever(v)
-escrever(tam(v))
+escrever(v.tam())
 
 fn busca_binaria(w, alvo) {
     lo = 0
-    hi = tam(w)
+    hi = w.tam()
     enquanto lo < hi {
         m = (lo + hi) / 2
         se w[m] < alvo {

@@ -605,7 +605,7 @@ Type *check_expression(Expression *expr)
             if (type->kind == TYPE_STRING || type->kind == TYPE_VOID || type->kind == TYPE_INT ||
                 type->kind == TYPE_REAL || type->kind == TYPE_TUPLE || type->kind == TYPE_UNKNOWN)
             {
-                FAIL_AT_NODE(expr->arguments.items[0], "tam() não funciona com %s",
+                FAIL_AT_NODE(expr->arguments.items[0], "%s() não funciona com %s", expr->text,
                              type_name(type));
             }
 

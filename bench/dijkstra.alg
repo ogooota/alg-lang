@@ -13,7 +13,7 @@ for i=0 to n {
 dist[0] = 0
 h = heap()
 h.push((0, 0))
-while len(h) > 0 {
+while h.size() > 0 {
     (d, u) = h.pop()
     if d > dist[u] {
         continue

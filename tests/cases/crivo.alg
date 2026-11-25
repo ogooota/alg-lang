@@ -7,5 +7,5 @@ for t=0 to q {
     h = 0
     for x in p
         h = (h * 31 + x) % 1000000007
-    write(len(p), h)
+    write(p.size(), h)
 }

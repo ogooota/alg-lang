@@ -13,7 +13,7 @@ para i=0 ate n {
 dist[0] = 0
 h = heap()
 h.inserir((0, 0))
-enquanto tam(h) > 0 {
+enquanto h.tam() > 0 {
     (d, u) = h.remover()
     se d > dist[u] {
         continue

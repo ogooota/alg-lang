@@ -13,7 +13,7 @@ for i=0 to n {
 dist[0] = 0
 pending = queue()
 pending.push(0)
-while len(pending) > 0 {
+while pending.size() > 0 {
     u = pending.pop()
     for v in g.neighbors(u) {
         if dist[v] == -1 {

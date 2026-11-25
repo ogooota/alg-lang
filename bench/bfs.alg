@@ -13,7 +13,7 @@ for i=0 to n {
 dist[0] = 0
 q = queue()
 q.push(0)
-while len(q) > 0 {
+while q.size() > 0 {
     u = q.pop()
     for v in g.neighbors(u) {
         if dist[v] == -1 {
