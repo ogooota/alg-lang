@@ -55,6 +55,27 @@ VariableSet ensured_lazy;
 const char *PRAGMAS = "#pragma GCC optimize(\"O3,unroll-loops\")\n"
                       "#pragma GCC target(\"avx2\")\n";
 
+/* C de cada tipo de campo de tupla ('i' inteiro, 'r' real, 's' string compacta) */
+static const char *field_c_type(char field)
+{
+    return field == 'r' ? "double" : field == 's' ? "Str" : "int64_t";
+}
+
+/* comparações de um campo: string compara pelo prefixo antes de seguir o ponteiro */
+static void emit_field_less(TextBuffer *out, char field, int i)
+{
+    text_appendf(out, field == 's' ? "packed_less(left.field_%d, right.field_%d)"
+                                   : "left.field_%d < right.field_%d",
+                 i, i);
+}
+
+static void emit_field_equal(TextBuffer *out, char field, int i)
+{
+    text_appendf(out, field == 's' ? "packed_equal(left.field_%d, right.field_%d)"
+                                   : "left.field_%d == right.field_%d",
+                 i, i);
+}
+
 /* struct da tupla e suas funções: ordem, igualdade, hash, escrita, leitura */
 void emit_tuple(TextBuffer *out, const ElementKind *kind)
 {
@@ -67,7 +88,7 @@ void emit_tuple(TextBuffer *out, const ElementKind *kind)
 
     for (int i = 0; i < count; i++)
     {
-        text_appendf(out, "    %s field_%d;\n", signature[i] == 'r' ? "double" : "int64_t", i);
+        text_appendf(out, "    %s field_%d;\n", field_c_type(signature[i]), i);
     }
 
     text_appendf(out, "} %s;\n\n", type);
@@ -79,11 +100,13 @@ void emit_tuple(TextBuffer *out, const ElementKind *kind)
 
     for (int i = 0; i < count - 1; i++)
     {
-        text_appendf(out, "left.field_%d < right.field_%d || (left.field_%d == right.field_%d && (",
-                     i, i, i, i);
+        emit_field_less(out, signature[i], i);
+        text_append(out, " || (");
+        emit_field_equal(out, signature[i], i);
+        text_append(out, " && (");
     }
 
-    text_appendf(out, "left.field_%d < right.field_%d", count - 1, count - 1);
+    emit_field_less(out, signature[count - 1], count - 1);
 
     for (int i = 0; i < count - 1; i++)
     {
@@ -97,7 +120,8 @@ void emit_tuple(TextBuffer *out, const ElementKind *kind)
 
     for (int i = 0; i < count; i++)
     {
-        text_appendf(out, " && left.field_%d == right.field_%d", i, i);
+        text_append(out, " && ");
+        emit_field_equal(out, signature[i], i);
     }
 
     text_append(out, ";\n}\n\n");
@@ -108,7 +132,10 @@ void emit_tuple(TextBuffer *out, const ElementKind *kind)
     for (int i = 0; i < count; i++)
     {
         text_appendf(out, "    hash = mix_bits(hash ^ %s(tuple.field_%d));\n",
-                     signature[i] == 'r' ? "hash_real" : "hash_int", i);
+                     signature[i] == 'r'   ? "hash_real"
+                     : signature[i] == 's' ? "packed_hash"
+                                           : "hash_int",
+                     i);
     }
 
     text_append(out, "    return hash;\n}\n\n");
@@ -117,8 +144,11 @@ void emit_tuple(TextBuffer *out, const ElementKind *kind)
 
     for (int i = 0; i < count; i++)
     {
-        text_appendf(out, "%s    %s(tuple.field_%d);\n", i ? "    write_space();\n" : "",
-                     signature[i] == 'r' ? "write_real" : "write_int", i);
+        text_append(out, i ? "    write_space();\n" : "");
+        text_appendf(out, signature[i] == 's' ? "    str_write(str_unpack(tuple.field_%d));\n"
+                          : signature[i] == 'r' ? "    write_real(tuple.field_%d);\n"
+                                                : "    write_int(tuple.field_%d);\n",
+                     i);
     }
 
     text_append(out, "}\n\n");
@@ -128,7 +158,9 @@ void emit_tuple(TextBuffer *out, const ElementKind *kind)
     for (int i = 0; i < count; i++)
     {
         text_appendf(out, "    tuple.field_%d = %s(line);\n", i,
-                     signature[i] == 'r' ? "read_real" : "read_int");
+                     signature[i] == 'r'   ? "read_real"
+                     : signature[i] == 's' ? "packed_read"
+                                           : "read_int");
     }
 
     text_append(out, "    return tuple;\n}\n");
@@ -343,11 +375,6 @@ void generate_c(Program *parsed_program, TextBuffer *out)
 
     text_appendf(out, "%.*s", (int)rt_core_h_len, (const char *)rt_core_h);
 
-    for (int i = 0; i < tuples.count; i++)
-    {
-        emit_tuple(out, tuples.items[i]);
-    }
-
     for (int kind_index = 0; kind_index < ELEMENT_KIND_COUNT; kind_index++)
     {
         if (element_used[kind_index])
@@ -360,6 +387,12 @@ void generate_c(Program *parsed_program, TextBuffer *out)
     if (element_used[ELEMENT_U8])
     {
         emit_text(out, rt_string_h, rt_string_h_len);
+    }
+
+    /* depois do runtime de strings: um campo pode ser string (Str) */
+    for (int i = 0; i < tuples.count; i++)
+    {
+        emit_tuple(out, tuples.items[i]);
     }
 
     if (strings_in_containers)

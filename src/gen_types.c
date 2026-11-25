@@ -60,11 +60,18 @@ const ElementKind *tuple_element_kind(Type *type)
 
     for (int i = 0; i < type->field_count && i < 63; i++)
     {
-        int is_real = resolve_unknown_type(type->fields[i])->kind == TYPE_REAL;
+        TypeKind field_kind = resolve_unknown_type(type->fields[i])->kind;
 
-        signature[i] = is_real ? 'r' : 'i';
-        strcat(snake, is_real ? "_real" : "_int");
-        strcat(pascal, is_real ? "Real" : "Int");
+        signature[i] = field_kind == TYPE_REAL ? 'r' : field_kind == TYPE_STRING ? 's' : 'i';
+        strcat(snake, field_kind == TYPE_REAL ? "_real" : field_kind == TYPE_STRING ? "_str" : "_int");
+        strcat(pascal, field_kind == TYPE_REAL ? "Real" : field_kind == TYPE_STRING ? "Str" : "Int");
+
+        /* campo string usa o runtime de strings (Str, packed_less...) */
+        if (field_kind == TYPE_STRING)
+        {
+            element_used[ELEMENT_U8] = 1;
+            strings_in_containers = 1;
+        }
     }
 
     for (int i = 0; i < tuples.count; i++)

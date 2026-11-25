@@ -56,7 +56,7 @@ make test                     # roda tests/cases/*.alg
 | Operações de conjunto | `uniao`, `inter`, `menos` (o `em` já funciona com mapa) | ⏳ |
 | Quantificadores | `para todo`, `existe` / `para algum` | ⏳ |
 | `INF` | constante 10¹⁸ (folga para `INF + peso`); em vetor `: int32` vira um valor especial e volta a ser 10¹⁸ na leitura | ✅ |
-| Tuplas | valor com parênteses `(d, v)`, comparação lexicográfica; desmontar usa colchetes, como o `auto [a, b]` do C++: `[a, b] = p`, `[a, b] = (b, a)` (troca), `para [a, b] em v` | ✅ |
+| Tuplas | valor com parênteses `(d, v)`; campos inteiros, reais ou strings (`(nota, nome)` ordena por nota e desempata pelo nome); comparação lexicográfica; desmontar usa colchetes, como o `auto [a, b]` do C++: `[a, b] = p`, `[a, b] = (b, a)` (troca), `para [a, b] em v` | ✅ |
 | Ordenar | `ordenar(v)`, `ordenar(v[i..j])`, `ordenar(v, maior)`; tuplas em ordem lexicográfica | ✅ |
 | Mapa | `m = mapa {}`, `m[k]` (ausente vale 0), `k em m`, `m.remover(k)`, `para [k, x] em m` (chaves em ordem) | ✅ |
 | Heap | `heap()` (menor sai primeiro), `heap(maior)`; `inserir`, `remover`, `topo` | ✅ |
@@ -147,6 +147,7 @@ Uma string é um vetor de caracteres que pode ser alterado no lugar.
 
 Regras:
 - `read(s)` lê uma palavra quando `s` é string: declarada com `#decl s: str` (pt: `texto`), ou já usada como string antes. Sem isso, `read(x)` continua lendo um inteiro. `read_line(s)` sempre cria string.
+- String lida de uma estrutura (`s = v[i]`, `para s em v`, `[nota, nome] = p`) é um valor: mudar `s[i]` ou fazer `s.adicionar(c)` copia antes, e a guardada não muda. Por dentro, ela empresta os bytes guardados até a primeira mudança (sem cópia na leitura).
 - Vetor de strings: `#decl names: str;` e depois `read(names[0..n])`, ou `names = {}` com `names.add(s)`.
 - Strings guardadas em vetor, heap, fila ou como chave de mapa são **copiadas**: mudar a string depois não muda o que foi guardado. `t = s` entre variáveis compartilha os dados, como nos vetores.
 - Mapa com chave string: `count = map {}`, `count[word] += 1`; percorre em ordem de dicionário.

@@ -178,7 +178,10 @@ void gen_for_in(TextBuffer *out, Statement *stmt, int depth)
             for (int i = 0; i < stmt->parameters.count; i++)
             {
                 gen_assign_line(out, stmt->pattern_variables[i], stmt->line, body_indent,
-                                "_a%d.data[_k%d].field_%d", temp_id, temp_id, i);
+                                cell_element_kind(iterable_type->element)->signature[i] == 's'
+                                    ? "str_unpack(_a%d.data[_k%d].field_%d)"
+                                    : "_a%d.data[_k%d].field_%d",
+                                temp_id, temp_id, i);
             }
         }
         else
@@ -225,7 +228,11 @@ void gen_tuple_assignment(TextBuffer *out, Statement *stmt, int depth)
                 gen_variable(out, item->variable, item->line);
             }
 
-            text_appendf(out, " = _t%d.field_%d;\n", temp_id, i);
+            text_appendf(out,
+                         tuple_element_kind(stmt->second->type)->signature[i] == 's'
+                             ? " = str_unpack(_t%d.field_%d);\n"
+                             : " = _t%d.field_%d;\n",
+                         temp_id, i);
             continue;
         }
 

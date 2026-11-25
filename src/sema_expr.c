@@ -487,7 +487,12 @@ Type *check_expression(Expression *expr)
 
         for (int i = 0; i < expr->arguments.count; i++)
         {
-            type->fields[i] = owned_type(check_number(expr->arguments.items[i]));
+            Expression *field = expr->arguments.items[i];
+
+            /* string num campo fica guardada compacta (Str), como nas estruturas */
+            type->fields[i] = is_string(resolve_unknown(check_expression(field)))
+                                  ? new_type(TYPE_STRING)
+                                  : owned_type(check_number(field));
         }
 
         return expr->type = type;

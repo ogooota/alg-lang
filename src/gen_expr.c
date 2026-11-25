@@ -636,6 +636,17 @@ void gen_lvalue(TextBuffer *out, Expression *expr)
         return;
     }
 
+    /* s[i] = c numa variável string: se ela veio de uma estrutura, copia antes de mudar */
+    if (expr->first->kind == EXPR_NAME && is_text_type(expr->first->type))
+    {
+        text_append(out, "(*str_at_mut(&");
+        gen_expression(out, expr->first);
+        text_append(out, ", ");
+        gen_expression(out, expr->second);
+        text_appendf(out, ", %d))", expr->line);
+        return;
+    }
+
     text_appendf(out, "(*array_%s_at(", array_suffix(expr->first->type));
     gen_expression(out, expr->first);
     text_append(out, ", ");
@@ -936,8 +947,13 @@ void gen_expression(TextBuffer *out, Expression *expr)
 
         for (int i = 0; i < expr->arguments.count; i++)
         {
+            /* string no campo: cópia compacta, mudar a original depois não muda a tupla */
+            int is_text = tuple_element_kind(expr->type)->signature[i] == 's';
+
             text_append(out, i ? ", " : "");
+            text_append(out, is_text ? "str_pack(" : "");
             gen_expression(out, expr->arguments.items[i]);
+            text_append(out, is_text ? ")" : "");
         }
 
         text_append(out, "})");

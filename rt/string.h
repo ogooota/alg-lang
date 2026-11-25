@@ -153,6 +153,17 @@ static ArrayU8 str_concat_char(ArrayU8 text, int64_t character)
     return result;
 }
 
+/** Posição para escrever em s[i]: string emprestada de uma estrutura vira cópia própria antes. */
+static inline uint8_t *str_at_mut(ArrayU8 *text, int64_t index, int line)
+{
+    if (text->capacity == -2)
+    {
+        *text = array_u8_copy(*text);
+    }
+
+    return array_u8_at(*text, index, line);
+}
+
 /** Acrescenta o texto extra no fim de text (no lugar). */
 static void str_append(ArrayU8 *text, ArrayU8 extra, int line)
 {
@@ -202,13 +213,16 @@ static inline Str str_pack(ArrayU8 text)
     return str_adopt(array_u8_copy(text));
 }
 
-/** A string guardada como valor; o primeiro add realoca, então quem leu pode crescer a sua cópia. */
+/* string lida de uma estrutura: empresta os bytes guardados; add e s[i] = c copiam antes */
+#define STR_BORROWED (-2)
+
+/** A string guardada como valor, emprestada: quem mudar a sua ganha uma cópia própria antes. */
 static inline ArrayU8 str_unpack(Str packed)
 {
     ArrayU8 text = {0};
     text.data = packed.data;
     text.length = packed.length;
-    text.capacity = packed.length;
+    text.capacity = STR_BORROWED;
     text.stride = 1;
     text.dimension_count = 1;
     return text;

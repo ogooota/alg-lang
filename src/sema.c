@@ -191,7 +191,7 @@ void check_assignment(Statement *stmt)
         for (int i = 0; i < target->arguments.count; i++)
         {
             Expression *item = target->arguments.items[i];
-            Type *field_type = value_type->fields[i];
+            Type *field_type = value_of_cell(value_type->fields[i]);
 
             if (item->kind == EXPR_NAME)
             {
@@ -333,7 +333,7 @@ void check_for_in(Statement *stmt)
             {
                 for (int i = 0; i < pattern_count; i++)
                 {
-                    types[type_count++] = element_type->fields[i];
+                    types[type_count++] = value_of_cell(element_type->fields[i]);
                 }
             }
             else

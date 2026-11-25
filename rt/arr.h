@@ -124,14 +124,15 @@ static ARRAY FN(_copy)(ARRAY array)
 /** Acrescenta no fim, dobrando a capacidade quando enche. */
 static void FN(_push)(ARRAY *array, ELEMENT item, int line)
 {
-    if (array->capacity < 0)
+    /* -2: string emprestada de uma estrutura (str_unpack); crescer já faz a cópia própria */
+    if (array->capacity < 0 && array->capacity != -2)
     {
         runtime_error(line, "não dá para adicionar numa fatia ou num vetor de várias dimensões");
     }
 
-    if (array->length == array->capacity)
+    if (array->length == array->capacity || array->capacity == -2)
     {
-        int64_t cap = array->capacity < 4 ? 8 : array->capacity * 2;
+        int64_t cap = array->length < 4 ? 8 : array->length * 2;
         ELEMENT *data = arena_allocate((size_t)cap * sizeof(ELEMENT));
 
         if (array->length)
@@ -161,7 +162,7 @@ static VALUE FN(_pop)(ARRAY *array, int line)
         runtime_error(line, "remover_ultimo em vetor vazio");
     }
 
-    if (array->capacity < 0)
+    if (array->capacity < 0 && array->capacity != -2)
     {
         runtime_error(line, "não dá para remover de uma fatia");
     }
