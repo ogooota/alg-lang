@@ -61,7 +61,7 @@ no `ios::sync_with_stdio(false)` and no `long long` anywhere.
 ## Speed
 
 alg with `-O` against C++ `-O2` (with `sync_with_stdio(false)`), same input, best of 5 runs. Lower is better. Timings on
-a shared machine move by 10–30% between runs (sorting words went from 0.81× to 1.14× with the same alg binary), so
+a shared machine move by 10–30% between runs (sorting words went from 0.81× to 1.14×, while the old and new alg took the same time side by side), so
 measure on your own computer.
 
 | Problem | alg / C++ time |
