@@ -26,13 +26,13 @@ make test                     # roda tests/cases/*.alg
 | `;` | opcional no fim de qualquer comando (`x = 3;`), para quem está acostumado com C | ✅ |
 | Parênteses do C | opcionais em `se (x > 0)`, `enquanto (i < n)` e `para (...)`: as duas formas valem, com ou sem. Com parênteses, o corpo de um comando só cabe na mesma linha: `se (x) escrever(x) senao escrever(0)` | ✅ |
 | `para` | `para i=0 ate n`, `para i=0 ate em n` (en: `thr`), `para x em v`, `para [a, b] em v`; com parênteses: `para (i=0 ate n)`, `para (x em v)`, `para ([a, b] em v)`; e o do C: `para (i = 0; i < n; i++)`, com qualquer condição e passo (`i--`, `i += 2`, `i *= 2`; partes vazias em `para (;;)`) | ✅ |
-| Função | `fn nome(a, b):` com bloco, ou `f(x) = expr` em uma linha; `ret` devolve (iguais em pt e en) | ✅ |
-| Tipos | estáticos e inferidos; `int` (64 bits), `real`, `int32` — iguais em pt e en | ✅ |
+| Função | `fn nome(a, b) { ... }`, ou `f(x) = expr` em uma linha; `ret` devolve (iguais em pt e en). Tipos opcionais no estilo do Rust: `fn f(v: {int}, k: int) -> int` (cada parte pode faltar) | ✅ |
+| Tipos | estáticos e inferidos; `int` (64 bits), `real`, `int32`, `str` — iguais em pt e en. Escrever o tipo é opcional e se escreve como o literal: `{int}` vetor, `{{int}}` matriz, `(int, str)` tupla, `map {str: int}` mapa (en: `map`, pt: `mapa`). Vale no `#decl`, nos parâmetros e no retorno; valor que não combina é erro de compilação | ✅ |
 | `: int32` | `#decl dp[n][m]: int32` guarda em 32 bits; valor que não cabe é erro (sem `-O`) | ✅ |
 | Vetor estreito | o compilador prova a faixa de valores e usa 1, 2, 4 ou 8 bytes por elemento | ✅ |
 | `-O` | sem checagens + `#pragma GCC optimize("O3,unroll-loops")` e `target("avx2")` no C gerado | ✅ |
 | Atribuição | `=` atribui (e declara, se for nova); `==` compara | ✅ |
-| `#decl` | variáveis não inicializadas (começam zeradas), no topo do arquivo ou da função | ✅ |
+| `#decl` | variáveis não inicializadas (começam zeradas), no topo do arquivo ou da função; com tipo: `#decl item: {(int, int)}` (e `ler(n, item[0..n])` lê `n` pares), `#decl m: map {str: int}` (já nasce vazio), `#decl melhor: (int, str)` (`ler(melhor)` lê os dois campos) | ✅ |
 | `#decl v[n]` | o vetor é criado e zerado no primeiro uso (`n` pode ser lido depois) | ✅ |
 | Índices | começam em 0; checados (erro com linha) a não ser com `-O` | ✅ |
 | Intervalo | `a[i..j]` não inclui `j`; `para i=0 ate n` = 0..n-1; `ate em n` = 0..n | ✅ |
@@ -41,7 +41,7 @@ make test                     # roda tests/cases/*.alg
 | Lógica | `e` / `ou` / `nao`; bit a bit `&` `\|` `^` `~` `<<` `>>` | ✅ |
 | Atualização | `+=` `-=` `*=` `/=` `%=` `&=` `\|=` `^=` `<<=` `>>=` (iguais ao C); `x++` / `x--` (também `++x` / `--x`); só como comando, nunca dentro de expressão | ✅ |
 | Precedência | bit a bit liga mais forte que comparação (`x & 1 == 0` funciona) | ✅ |
-| Funções | `fn f(x):` + `ret`, ou `f(x) = expr`; tipos inferidos pelas chamadas | ✅ |
+| Funções | `fn f(x) { ... }` + `ret`, ou `f(x) = expr`; sem tipo escrito, os tipos vêm das chamadas (uma versão por combinação); com `-> tipo`, a recursão já sabe o retorno | ✅ |
 | Escopo | dentro de função, variável é local por padrão: `x = ...`, `[a, b] = ...`, `ler(x)` e a variável do `para` criam uma local, mesmo que exista uma global com o mesmo nome. Para mudar uma global dentro da função, declare-a no `#decl` do topo. Posição de vetor (`dp[i] = x`) e métodos (`h.inserir(x)`) em globais funcionam sem isso, e ler uma global também. `x++` ou `x = x + 1` numa global sem `#decl` é erro (mudaria só uma cópia local) | ✅ |
 | Passagem | número por valor, vetor por referência | ✅ |
 | Programa | sem `main`: o topo do arquivo é o programa; `ret` encerra | ✅ |
@@ -56,7 +56,7 @@ make test                     # roda tests/cases/*.alg
 | Operações de conjunto | `uniao`, `inter`, `menos` (o `em` já funciona com mapa) | ⏳ |
 | Quantificadores | `para todo`, `existe` / `para algum` | ⏳ |
 | `INF` | constante 10¹⁸ (folga para `INF + peso`); em vetor `: int32` vira um valor especial e volta a ser 10¹⁸ na leitura | ✅ |
-| Tuplas | valor com parênteses `(d, v)`; campos inteiros, reais ou strings (`(nota, nome)` ordena por nota e desempata pelo nome); comparação lexicográfica; desmontar usa colchetes, como o `auto [a, b]` do C++: `[a, b] = p`, `[a, b] = (b, a)` (troca), `para [a, b] em v` | ✅ |
+| Tuplas | valor com parênteses `(d, v)`; campo com `p[0]`, `p[1]` (número fixo; também para mudar: `item[i][0] += 1`); campos inteiros, reais ou strings (`(nota, nome)` ordena por nota e desempata pelo nome); comparação lexicográfica; desmontar usa colchetes, como o `auto [a, b]` do C++: `[a, b] = p`, `[a, b] = (b, a)` (troca), `para [a, b] em v` | ✅ |
 | Ordenar | `ordenar(v)`, `ordenar(v[i..j])`, `ordenar(v, maior)`; tuplas em ordem lexicográfica | ✅ |
 | Mapa | `m = mapa {}`, `m[k]` (ausente vale 0), `k em m`, `m.remover(k)`, `para [k, x] em m` (chaves em ordem) | ✅ |
 | Heap | `heap()` (menor sai primeiro), `heap(maior)`; `inserir`, `remover`, `topo` | ✅ |
@@ -298,4 +298,4 @@ Todo C do projeto segue estas regras (o `.clang-format` cuida da formatação; `
 - **Contar primos sem listar**: função nativa que devolve quantos primos existem `≤ n` sem montar o vetor (algoritmo de Lucy_Hedgehog / Meissel–Lehmer, O(n^(3/4)) ou melhor). Responde n = 10¹¹ em milissegundos, onde `crivo(n)` nem caberia na memória. Nome a decidir (proposta: `contaprimos(n)` / `count_primes(n)`).
 - **Mensagens de erro em inglês**: hoje os erros do compilador (`fail_at` em `src/lex.c`, `src/parse.c`, `src/sema.c`) e do runtime (`runtime_error` em `rt/*.h`) saem só em português. Com `#lang en` (a língua principal), devem sair em inglês. Cabe na mesma tabela de idiomas do item acima.
 - **Strings no guia**: o `docs/guia.html` ainda não tem um exemplo de texto (`s[i]`, `'a'`, `+`, `.add(c)`, `ler_linha`). Adicionar um exemplo testado em `docs/examples/` e gerar o guia de novo com `docs/build_guide.py`.
-- **Tipagem forte opcional**: a inferência continua sendo o padrão, mas deve ser *possível* (nunca obrigatório) escrever o tipo para deixar a intenção clara e o compilador conferir. Exemplos: dizer que algo é vetor com `{}` (`{int}`, `{{real}}`), que é mapa com `map {}` (`map {str: int}`), e o mesmo para `heap`, `queue`, `graph`, tupla `(int, real)` e `str`. Vale em `#decl`, em parâmetros de função e no retorno; um valor que não bate com o tipo escrito é erro de compilação com a linha. Sintaxe exata a decidir.
+- **Tipagem forte opcional (resto)**: já existe no `#decl`, nos parâmetros e no retorno (`{int}`, `(int, str)`, `map {str: int}`). Falta: tipo de `heap`, `fila` e `grafo`, e tipo na primeira atribuição (`v: {int} = {}`), se fizer falta.

@@ -124,6 +124,7 @@ typedef enum
     PUNCT_SHIFT_RIGHT,
     PUNCT_INCREMENT,
     PUNCT_DECREMENT,
+    PUNCT_ARROW,
 
     /* atribuição composta, igual ao C (só como comando: x += 1) */
 
@@ -262,11 +263,26 @@ struct Expression
     FunctionInstance *instance; /* chamada resolvida */
 };
 
+/* tipo escrito pelo usuário: int, real, int32, str, {T}, (T, U), map {K: V} */
+typedef struct TypeSyntax TypeSyntax;
+
+struct TypeSyntax
+{
+    TypeKind shape; /* TYPE_INT, TYPE_REAL, TYPE_STRING, TYPE_ARRAY, TYPE_TUPLE ou TYPE_MAP */
+    int is_int32;
+    TypeSyntax *element; /* vetor: elemento; mapa: chave */
+    TypeSyntax *value;   /* mapa: valor */
+    VEC(TypeSyntax *) fields;
+    int line;
+    int column;
+};
+
 typedef struct
 {
     char *name;
     ExpressionList dimensions;
-    char *type_name;
+    TypeSyntax *declared_type; /* #decl x: tipo (NULL se não escrito) */
+    Variable *variable;
     int line;
     int column;
 } Declaration;
@@ -304,6 +320,8 @@ struct Statement
     Variable *variable;
     Variable **pattern_variables; /* S_FORIN com [v, w]: as variáveis */
     Statement *fallback;          /* S_FOR vindo do for do C: a forma while, se não for inteiro */
+    TypeSyntax **parameter_types; /* S_FUNC: tipo escrito de cada parâmetro (NULL: inferido) */
+    TypeSyntax *return_type;      /* S_FUNC: fn f(...) -> tipo */
 };
 
 StatementList parse(TokenList *tokens, Language language);
@@ -317,6 +335,7 @@ struct Variable
     int is_global;
     int is_parameter;
     int is_declared;        /* veio de #decl: no topo, as funções podem atribuir a ela */
+    int awaits_read;        /* #decl v: {T} ainda sem tamanho: ler(v[0..n]) cria */
     int is_lazy;            /* #decl v[n][m]: vetor alocado no primeiro uso */
     int is_declared_string; /* #decl s: str (read(s) lê palavra; read(s[0..n]) lê vetor de strings)
                              */

@@ -783,6 +783,9 @@ int main() {
 <tr><td><code>int dp[N][M]</code> (global)</td><td><code>#decl dp[n][m]: int32;</code></td><td>real size, not the maximum</td></tr>
 <tr><td><code>i++</code>, <code>i--</code></td><td><code>i++</code>, <code>i--</code></td><td>statements only</td></tr>
 <tr><td><code>pair&lt;ll, int&gt;</code></td><td><code>(d, u)</code></td><td>tuples of any size</td></tr>
+<tr><td><code>p.first</code>, <code>get&lt;2&gt;(t)</code></td><td><code>p[0]</code>, <code>t[2]</code></td><td>fixed index</td></tr>
+<tr><td><code>vector&lt;pair&lt;ll, ll&gt;&gt; a(n)</code> + loop</td><td><code>#decl a: {(int, int)}</code> + <code>read(n, a[0..n])</code></td><td>types are optional</td></tr>
+<tr><td><code>ll f(vector&lt;ll&gt; &amp;v, int k)</code></td><td><code>fn f(v: {int}, k: int) -&gt; int</code></td><td>or no types: inferred from the calls</td></tr>
 <tr><td><code>auto [d, u] = p;</code></td><td><code>[d, u] = p</code></td><td></td></tr>
 <tr><td><code>sort(v.begin(), v.end())</code></td><td><code>sort(v)</code></td><td><code>sort(v, greater)</code> for descending</td></tr>
 <tr><td><code>priority_queue&lt;T, vector&lt;T&gt;, greater&lt;&gt;&gt;</code></td><td><code>heap()</code></td><td>smallest first</td></tr>
@@ -1257,6 +1260,9 @@ int main() {
 <tr><td><code>int dp[N][M]</code> (global)</td><td><code>#decl dp[n][m]: int32;</code></td><td>tamanho real, não o máximo</td></tr>
 <tr><td><code>i++</code>, <code>i--</code></td><td><code>i++</code>, <code>i--</code></td><td>só como comando</td></tr>
 <tr><td><code>pair&lt;ll, int&gt;</code></td><td><code>(d, u)</code></td><td>tupla de qualquer tamanho</td></tr>
+<tr><td><code>p.first</code>, <code>get&lt;2&gt;(t)</code></td><td><code>p[0]</code>, <code>t[2]</code></td><td>índice fixo</td></tr>
+<tr><td><code>vector&lt;pair&lt;ll, ll&gt;&gt; a(n)</code> + loop</td><td><code>#decl a: {(int, int)}</code> + <code>ler(n, a[0..n])</code></td><td>tipos são opcionais</td></tr>
+<tr><td><code>ll f(vector&lt;ll&gt; &amp;v, int k)</code></td><td><code>fn f(v: {int}, k: int) -&gt; int</code></td><td>ou sem tipos: vêm das chamadas</td></tr>
 <tr><td><code>auto [d, u] = p;</code></td><td><code>[d, u] = p</code></td><td></td></tr>
 <tr><td><code>sort(v.begin(), v.end())</code></td><td><code>ordenar(v)</code></td><td><code>ordenar(v, maior)</code> decrescente</td></tr>
 <tr><td><code>priority_queue&lt;T, vector&lt;T&gt;, greater&lt;&gt;&gt;</code></td><td><code>heap()</code></td><td>menor primeiro</td></tr>

@@ -44,6 +44,7 @@ Type *value_of_cell(Type *cell);
 const char *type_name(Type *type);
 int same_tuple(Type *left_type, Type *right_type);
 void fill_cell(Type *cell, Type *type);
+Type *type_from_syntax(TypeSyntax *syntax, int cell);
 Type *owned_type(Type *type);
 void unify_elements(Type *target, Type *source, Expression *location);
 void unify_types(Type *target, Type *source, Expression *location);

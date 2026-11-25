@@ -140,6 +140,17 @@ Type *check_user_call(Expression *expr, Function *function)
         }
 
         argument_types[i] = owned_type(type);
+
+        /* parâmetro com tipo escrito: o argumento precisa combinar (inteiro vira real) */
+        TypeSyntax *declared = definition->parameter_types ? definition->parameter_types[i] : NULL;
+
+        if (declared)
+        {
+            Type *wanted = type_from_syntax(declared, 0);
+
+            unify_types(wanted, type, argument);
+            argument_types[i] = is_number(wanted) ? owned_type(wanted) : type;
+        }
     }
 
     FunctionInstance *instance = find_instance(function, argument_types, expr->arguments.count);
@@ -534,9 +545,24 @@ Type *check_expression(Expression *expr)
             return expr->type = value_of_cell(type->value);
         }
 
+        /* p[0], p[1]: o índice é um número fixo, porque cada campo pode ter um tipo */
+        if (type->kind == TYPE_TUPLE)
+        {
+            if (expr->second->kind != EXPR_INT || expr->second->int_value < 0 ||
+                expr->second->int_value >= type->field_count)
+            {
+                FAIL_AT_NODE(expr->second, "campo de tupla é um número fixo, de 0 a %d",
+                             type->field_count - 1);
+            }
+
+            expr->second->type = &INT_TYPE;
+            return expr->type = value_of_cell(type->fields[expr->second->int_value]);
+        }
+
         if (type->kind != TYPE_ARRAY)
         {
-            FAIL_AT_NODE(expr, "só dá para indexar vetor ou mapa, e isto é %s", type_name(type));
+            FAIL_AT_NODE(expr, "só dá para indexar vetor, mapa ou tupla, e isto é %s",
+                         type_name(type));
         }
 
         check_int(expr->second);

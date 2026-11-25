@@ -337,6 +337,12 @@ FunctionInstance *new_instance(Function *function, Type **argument_types)
     instance->next = function->instances;
     function->instances = instance;
 
+    /* fn f(...) -> tipo: os ret conferem com ele, e a recursão já sabe o retorno */
+    if (definition->return_type)
+    {
+        instance->return_type = type_from_syntax(definition->return_type, 0);
+    }
+
     instance->c_name = allocate_zeroed(strlen(function->name) + 24);
     sprintf(instance->c_name, "%s_%d", function->name, function->instance_count);
     function->instance_count++;

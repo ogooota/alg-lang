@@ -20,6 +20,7 @@ static const Spelling OPERATORS[] = {
     {"++", PUNCT_INCREMENT},
     {"--", PUNCT_DECREMENT},
     {"+=", PUNCT_PLUS_ASSIGN},
+    {"->", PUNCT_ARROW},
     {"-=", PUNCT_MINUS_ASSIGN},
     {"*=", PUNCT_STAR_ASSIGN},
     {"/=", PUNCT_SLASH_ASSIGN},

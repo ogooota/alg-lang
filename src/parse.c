@@ -521,6 +521,69 @@ static void parse_block(StatementList *out)
 }
 
 /* nome[dim]...[: tipo] */
+/** Tipo escrito: int, real, int32, str, {T}, (T, U, ...) ou map {K: V}. */
+static TypeSyntax *parse_type(void)
+{
+    Token *token = current_token();
+    TypeSyntax *syntax = allocate_zeroed(sizeof *syntax);
+
+    syntax->line = token->line;
+    syntax->column = token->column;
+
+    if (accept_token(PUNCT_LEFT_BRACE))
+    {
+        syntax->shape = TYPE_ARRAY;
+        syntax->element = parse_type();
+        expect_token(PUNCT_RIGHT_BRACE);
+        return syntax;
+    }
+
+    if (accept_token(PUNCT_LEFT_PAREN))
+    {
+        syntax->shape = TYPE_TUPLE;
+
+        do
+        {
+            PUSH(syntax->fields, parse_type());
+        } while (accept_token(PUNCT_COMMA));
+
+        expect_token(PUNCT_RIGHT_PAREN);
+
+        if (syntax->fields.count < 2)
+        {
+            fail_at(token->line, token->column, "tupla tem pelo menos 2 campos: (int, int)");
+        }
+
+        return syntax;
+    }
+
+    Builtin builtin = builtin_of(expect_token(TOKEN_NAME)->text, lang);
+
+    if (builtin == BUILTIN_MAPA)
+    {
+        syntax->shape = TYPE_MAP;
+        expect_token(PUNCT_LEFT_BRACE);
+        syntax->element = parse_type();
+        expect_token(PUNCT_COLON);
+        syntax->value = parse_type();
+        expect_token(PUNCT_RIGHT_BRACE);
+        return syntax;
+    }
+
+    if (builtin != BUILTIN_INT && builtin != BUILTIN_REAL && builtin != BUILTIN_INT32 &&
+        builtin != BUILTIN_TEXTO)
+    {
+        fail_at(token->line, token->column,
+                "tipo desconhecido '%s' (use int, int32, real, str, {T}, (T, U) ou map {K: V})",
+                token->text);
+    }
+
+    syntax->shape = builtin == BUILTIN_REAL ? TYPE_REAL : builtin == BUILTIN_TEXTO ? TYPE_STRING
+                                                                                   : TYPE_INT;
+    syntax->is_int32 = builtin == BUILTIN_INT32;
+    return syntax;
+}
+
 static void parse_declaration_item(Statement *stmt)
 {
     Token *name_token = expect_token(TOKEN_NAME);
@@ -538,7 +601,7 @@ static void parse_declaration_item(Statement *stmt)
 
     if (accept_token(PUNCT_COLON))
     {
-        declaration.type_name = expect_token(TOKEN_NAME)->text;
+        declaration.declared_type = parse_type();
     }
 
     PUSH(stmt->declarations, declaration);
@@ -599,15 +662,25 @@ static Statement *parse_function(Token *token)
     stmt->text = expect_token(TOKEN_NAME)->text;
     expect_token(PUNCT_LEFT_PAREN);
 
+    /* fn f(v: {int}, k: int) -> int: cada tipo é opcional (sem ele, vem das chamadas) */
+    VEC(TypeSyntax *) parameter_types = {0};
+
     if (!at_token(PUNCT_RIGHT_PAREN))
     {
         do
         {
             PUSH(stmt->parameters, expect_token(TOKEN_NAME)->text);
+            PUSH(parameter_types, accept_token(PUNCT_COLON) ? parse_type() : NULL);
         } while (accept_token(PUNCT_COMMA));
     }
 
     expect_token(PUNCT_RIGHT_PAREN);
+    stmt->parameter_types = parameter_types.items;
+
+    if (accept_token(PUNCT_ARROW))
+    {
+        stmt->return_type = parse_type();
+    }
 
     function_depth++;
     parse_block(&stmt->body);

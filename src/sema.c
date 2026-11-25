@@ -45,7 +45,7 @@ void check_read_argument(Expression *argument)
             return;
         }
 
-        if (variable->type->kind == TYPE_STRING)
+        if (variable->type->kind == TYPE_STRING || variable->type->kind == TYPE_TUPLE)
         {
             return;
         }
@@ -62,7 +62,8 @@ void check_read_argument(Expression *argument)
     {
         Type *type = resolve_unknown(check_expression(argument));
 
-        if (!is_number(type) && !(is_string(type) && holds_strings(argument)))
+        if (!is_number(type) && type->kind != TYPE_TUPLE &&
+            !(is_string(type) && holds_strings(argument)))
         {
             FAIL_AT_NODE(argument, "ler() precisa chegar até os elementos (isto é %s)",
                          type_name(type));
@@ -93,6 +94,22 @@ void check_read_argument(Expression *argument)
     }
 
     Variable *variable = base->kind == EXPR_NAME ? lookup_variable(base->text) : NULL;
+
+    /* #decl v: {(int, int)}: ler(v[0..n]) cria v com o tipo escrito e lê cada elemento */
+    if (variable && variable->awaits_read)
+    {
+        if (variable->type->dimension_count != dimension_count)
+        {
+            FAIL_AT_NODE(argument, "'%s' tem %d dimensão(ões), mas a leitura usa %d", base->text,
+                         variable->type->dimension_count, dimension_count);
+        }
+
+        variable->awaits_read = 0;
+        base->variable = variable;
+        base->type = variable->type;
+        argument->inclusive = 1;
+        return;
+    }
 
     if (variable && variable->is_declared_string)
     {
@@ -155,7 +172,7 @@ void check_read_argument(Expression *argument)
 
 /* ---------- comandos ---------- */
 
-/** O alvo é uma posição de vetor de strings ou um valor de mapa de strings. */
+/** O alvo é uma posição de vetor de strings, um valor de mapa de strings ou um campo string. */
 int holds_strings(Expression *target)
 {
     if (target->kind != EXPR_INDEX)
@@ -166,6 +183,7 @@ int holds_strings(Expression *target)
     Type *container = target->first->type;
     Type *cell = container->kind == TYPE_MAP     ? container->value
                  : container->kind == TYPE_ARRAY ? container->element
+                 : container->kind == TYPE_TUPLE ? container->fields[target->second->int_value]
                                                  : NULL;
     return cell && cell_root(cell)->kind == TYPE_STRING;
 }
@@ -421,37 +439,32 @@ void check_statement(Statement *stmt, int top, int *seen_code)
                 fail_at(declaration->line, declaration->column, "no máximo 4 dimensões");
             }
 
-            Type *cell = new_type(TYPE_UNKNOWN);
+            TypeSyntax *declared = declaration->declared_type;
+            int dimension_count = declaration->dimensions.count;
+            int is_container = declared && (declared->shape == TYPE_ARRAY || declared->shape == TYPE_MAP);
 
-            if (declaration->type_name)
+            if (is_container && dimension_count)
             {
-                Builtin builtin = builtin_of(declaration->type_name, checked_program->language);
-
-                if (builtin != BUILTIN_INT && builtin != BUILTIN_REAL && builtin != BUILTIN_INT32 &&
-                    builtin != BUILTIN_TEXTO)
-                {
-                    fail_at(declaration->line, declaration->column,
-                            "tipo desconhecido '%s' (use int, int32, real ou str)",
-                            declaration->type_name);
-                }
-
-                cell->kind = builtin == BUILTIN_REAL    ? TYPE_REAL
-                             : builtin == BUILTIN_TEXTO ? TYPE_STRING
-                                                        : TYPE_INT;
-                cell->is_int32 = builtin == BUILTIN_INT32;
+                fail_at(declaration->line, declaration->column,
+                        "#decl v[n] guarda int, real, str ou tupla; vetor sem tamanho é v: {T}");
             }
 
+            Type *cell = declared ? type_from_syntax(declared, 1) : new_type(TYPE_UNKNOWN);
+
             /* #decl s: str é uma string (ler(s) lê palavra); com [n], vetor de strings */
-            int is_text = cell->kind == TYPE_STRING && !declaration->dimensions.count;
-            Variable *variable = declare_variable(
-                declaration->name,
-                declaration->dimensions.count ? array_type(cell, declaration->dimensions.count)
-                : is_text                     ? new_string_type()
-                                              : cell,
-                declaration->line);
+            int is_text = declared && declared->shape == TYPE_STRING && !dimension_count;
+            Type *variable_type = dimension_count ? array_type(cell, dimension_count)
+                                  : is_text       ? new_string_type()
+                                  : declared && declared->shape != TYPE_INT &&
+                                          declared->shape != TYPE_REAL
+                                      ? type_from_syntax(declared, 0)
+                                      : cell;
+            Variable *variable = declare_variable(declaration->name, variable_type, declaration->line);
 
             variable->is_declared_string = is_text;
             variable->is_declared = 1;
+            variable->awaits_read = declared && declared->shape == TYPE_ARRAY;
+            declaration->variable = variable;
 
             if (declaration->dimensions.count)
             {

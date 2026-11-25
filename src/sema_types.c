@@ -396,6 +396,88 @@ void store_in_cell(Type *cell, Type *type, Expression *location)
     }
 }
 
+/** Tipo de campo de tupla ou de chave/valor de mapa escrito: int, real, int32, str ou tupla. */
+static Type *scalar_from_syntax(TypeSyntax *syntax, const char *where)
+{
+    if (syntax->shape == TYPE_ARRAY || syntax->shape == TYPE_MAP)
+    {
+        fail_at(syntax->line, syntax->column, "%s guarda int, real, str ou tupla", where);
+    }
+
+    return type_from_syntax(syntax, 1);
+}
+
+/**
+ * Tipo da linguagem a partir do tipo escrito (#decl, parâmetro, retorno). Com cell, é o tipo
+ * guardado numa posição de vetor ou estrutura (string vira a célula compacta TYPE_STRING).
+ */
+Type *type_from_syntax(TypeSyntax *syntax, int cell)
+{
+    switch (syntax->shape)
+    {
+    case TYPE_STRING:
+        return cell ? new_type(TYPE_STRING) : new_string_type();
+
+    case TYPE_ARRAY:
+    {
+        int dimension_count = 1;
+        TypeSyntax *inner = syntax->element;
+
+        /* {{int}} é a matriz de 2 dimensões, como ler(g[0..n][0..m]) cria */
+        while (inner->shape == TYPE_ARRAY)
+        {
+            dimension_count++;
+            inner = inner->element;
+        }
+
+        if (dimension_count > 4)
+        {
+            fail_at(syntax->line, syntax->column, "no máximo 4 dimensões");
+        }
+
+        return array_type(scalar_from_syntax(inner, "vetor"), dimension_count);
+    }
+
+    case TYPE_TUPLE:
+    {
+        Type *type = new_type(TYPE_TUPLE);
+
+        type->field_count = syntax->fields.count;
+        type->fields = allocate_zeroed(sizeof(Type *) * (size_t)type->field_count);
+
+        for (int i = 0; i < type->field_count; i++)
+        {
+            if (syntax->fields.items[i]->shape == TYPE_TUPLE)
+            {
+                fail_at(syntax->line, syntax->column, "tupla dentro de tupla ainda não existe");
+            }
+
+            type->fields[i] = scalar_from_syntax(syntax->fields.items[i], "campo de tupla");
+        }
+
+        return type;
+    }
+
+    case TYPE_MAP:
+    {
+        Type *type = new_type(TYPE_MAP);
+
+        type->element = new_structure_cell();
+        type->value = new_structure_cell();
+        fill_cell(type->element, scalar_from_syntax(syntax->element, "chave de mapa"));
+        fill_cell(type->value, scalar_from_syntax(syntax->value, "valor de mapa"));
+        return type;
+    }
+
+    default:
+    {
+        Type *type = new_type(syntax->shape);
+        type->is_int32 = syntax->is_int32;
+        return type;
+    }
+    }
+}
+
 /** Célula de elemento para heap, fila, mapa ou grafo (nunca estreitada). */
 Type *new_structure_cell(void)
 {

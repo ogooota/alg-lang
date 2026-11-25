@@ -311,7 +311,23 @@ void gen_statement(TextBuffer *out, Statement *stmt, int depth)
     switch (stmt->kind)
     {
     case STMT_FUNCTION:
+        return;
+
     case STMT_DECL:
+
+        /* #decl m: map {K: V} já nasce um mapa vazio, como m = map {} */
+        for (int i = 0; i < stmt->declarations.count; i++)
+        {
+            Variable *variable = stmt->declarations.items[i].variable;
+
+            if (variable && variable->type->kind == TYPE_MAP)
+            {
+                indent(out, depth);
+                gen_variable(out, variable, stmt->line);
+                text_appendf(out, " = %s_new();\n", template_name(variable->type));
+            }
+        }
+
         return;
 
     case STMT_EXPR:

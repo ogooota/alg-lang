@@ -630,6 +630,15 @@ void gen_lvalue(TextBuffer *out, Expression *expr)
         return;
     }
 
+    /* p[0] = x: o campo do lugar onde a tupla está guardada (variável, vetor, mapa) */
+    if (expr->kind == EXPR_INDEX && expr->first->type->kind == TYPE_TUPLE)
+    {
+        text_append(out, "(");
+        gen_lvalue(out, expr->first);
+        text_appendf(out, ").field_%lld", (long long)expr->second->int_value);
+        return;
+    }
+
     if (expr->kind != EXPR_INDEX || expr->first->type->dimension_count != 1)
     {
         gen_expression(out, expr);
@@ -876,6 +885,15 @@ void gen_expression(TextBuffer *out, Expression *expr)
         if (expr == cached_map_index)
         {
             text_appendf(out, "(*_p%d)", cached_map_pointer);
+        }
+        else if (expr->first->type->kind == TYPE_TUPLE)
+        {
+            int unpack = is_text_type(expr->type);
+
+            text_append(out, unpack ? "str_unpack(((" : "((");
+            gen_expression(out, expr->first);
+            text_appendf(out, ").field_%lld)", (long long)expr->second->int_value);
+            text_append(out, unpack ? ")" : "");
         }
         else if (expr->first->type->kind == TYPE_MAP)
         {
