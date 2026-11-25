@@ -55,3 +55,11 @@ write(i)
 read(k)
 for (i = 0; i < k; i++) read(k)
 write(i, k)
+x = 3
+y = 0
+if (x > 1 && !(y == 1) || x == 9) write("a")
+if (!y) write("b")
+write(x != 3, !x, x & 1, x | 4)
+x &= 1
+x |= 8
+write(x)

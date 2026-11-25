@@ -20,6 +20,8 @@ static const Spelling OPERATORS[] = {
     {"++", PUNCT_INCREMENT},
     {"--", PUNCT_DECREMENT},
     {"+=", PUNCT_PLUS_ASSIGN},
+    {"&&", KEYWORD_E},
+    {"||", KEYWORD_OU},
     {"->", PUNCT_ARROW},
     {"-=", PUNCT_MINUS_ASSIGN},
     {"*=", PUNCT_STAR_ASSIGN},
@@ -57,6 +59,7 @@ static const Spelling OPERATORS[] = {
     {"|", PUNCT_BAR},
     {"^", PUNCT_CARET},
     {"~", PUNCT_TILDE},
+    {"!", KEYWORD_NAO}, /* depois do "!=": sozinho é o not do C */
 };
 
 #define COUNT(a) (sizeof(a) / sizeof *(a))

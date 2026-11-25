@@ -38,7 +38,7 @@ make test                     # roda tests/cases/*.alg
 | Intervalo | `a[i..j]` não inclui `j`; `para i=0 ate n` = 0..n-1; `ate em n` = 0..n | ✅ |
 | Fatia | enxerga os mesmos dados (view); `copia(...)` faz cópia | ✅ |
 | Divisão | `/` entre inteiros arredonda para baixo; `%` nunca é negativo | ✅ |
-| Lógica | `e` / `ou` / `nao`; bit a bit `&` `\|` `^` `~` `<<` `>>` | ✅ |
+| Lógica | `e` / `ou` / `nao` (en: `and` / `or` / `not`), ou os do C: `&&` / `\|\|` / `!`; bit a bit `&` `\|` `^` `~` `<<` `>>` | ✅ |
 | Atualização | `+=` `-=` `*=` `/=` `%=` `&=` `\|=` `^=` `<<=` `>>=` (iguais ao C); `x++` / `x--` (também `++x` / `--x`); só como comando, nunca dentro de expressão | ✅ |
 | Precedência | bit a bit liga mais forte que comparação (`x & 1 == 0` funciona) | ✅ |
 | Funções | `fn f(x) { ... }` + `ret`, ou `f(x) = expr`; sem tipo escrito, os tipos vêm das chamadas (uma versão por combinação); com `-> tipo`, a recursão já sabe o retorno | ✅ |
