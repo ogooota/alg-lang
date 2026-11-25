@@ -422,7 +422,8 @@ typedef enum
     BUILTIN_SEGTREE,
     BUILTIN_RMQ,
     BUILTIN_TEXTO,
-    BUILTIN_LER_LINHA
+    BUILTIN_LER_LINHA,
+    BUILTIN_CONTA_PRIMOS
 } Builtin;
 
 /* métodos das estruturas: o nome depende do tipo do objeto */

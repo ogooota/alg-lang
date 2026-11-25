@@ -524,6 +524,12 @@ void gen_call(TextBuffer *out, Expression *expr)
             text_appendf(out, "%d)", expr->line);
             return;
 
+        case BUILTIN_CONTA_PRIMOS:
+            text_append(out, "count_primes(");
+            gen_expression(out, expr->arguments.items[0]);
+            text_append(out, ")");
+            return;
+
         case BUILTIN_CRIVO:
         {
             int temp_id = temp_counter++;

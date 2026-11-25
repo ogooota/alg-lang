@@ -64,7 +64,7 @@ make test                     # roda tests/cases/*.alg
 | Pilha | o próprio vetor: `adicionar`, `remover_ultimo` | ✅ |
 | Grafo | `grafo(n)`, `grafo(n, dirigido)`; `g.aresta(u, v[, peso])`; `para v em g.vizinhos(u)`, `para [v, w] em g.vizinhos(u)` | ✅ |
 | Registros | `tipo Aresta: u; v; peso` | ⏳ |
-| Técnicas nativas | `prefixo`, `busca`, `mdc`, `mmc`, `potmod`, `crivo`, `conjuntos`, `fenwick`, `segtree`, `rmq` (seção abaixo) | ✅ |
+| Técnicas nativas | `prefixo`, `busca`, `mdc`, `mmc`, `potmod`, `crivo`, `conta_primos`, `conjuntos`, `fenwick`, `segtree`, `rmq` (seção abaixo) | ✅ |
 | Adiado | `rep(ação, parada)`, tradutor pt↔en, compressão de coordenadas | — |
 
 ## O que já dá para escrever (marco 1)
@@ -167,6 +167,7 @@ Técnicas que aparecem em quase toda maratona viram parte da linguagem: menos c�
 | `mmc(a, b)` | `lcm(a, b)` | mínimo múltiplo comum | O(log) |
 | `potmod(b, e, m)` | `powmod(b, e, m)` | `b^e mod m` por exponenciação rápida (resultado em `[0, m)`) | O(log e) |
 | `crivo(n)` | `sieve(n)` | vetor com os primos `≤ n`, em ordem | O(n log log n) |
+| `conta_primos(n)` | `count_primes(n)` | quantos primos `≤ n`, sem montar o vetor (Lucy_Hedgehog): n = 10¹¹ em ~0,5 s e O(√n) de memória | O(n^(3/4)) |
 
 ### Estruturas
 
@@ -295,6 +296,5 @@ Todo C do projeto segue estas regras (o `.clang-format` cuida da formatação; `
 ## TODO
 
 - **Idiomas configuráveis**: hoje pt e en estão em tabelas dentro do código (`src/lex.c` e `src/parse.c`). A ideia é tirar as palavras-chave, os nomes nativos e os métodos para arquivos de idioma (um por idioma), para que qualquer pessoa traduza a linguagem só criando uma configuração nova (`#lang es`, `#lang fr`...). Importante quando o projeto virar open source.
-- **Contar primos sem listar**: função nativa que devolve quantos primos existem `≤ n` sem montar o vetor (algoritmo de Lucy_Hedgehog / Meissel–Lehmer, O(n^(3/4)) ou melhor). Responde n = 10¹¹ em milissegundos, onde `crivo(n)` nem caberia na memória. Nome a decidir (proposta: `contaprimos(n)` / `count_primes(n)`).
 - **Mensagens de erro em inglês**: hoje os erros do compilador (`fail_at` em `src/lex.c`, `src/parse.c`, `src/sema.c`) e do runtime (`runtime_error` em `rt/*.h`) saem só em português. Com `#lang en` (a língua principal), devem sair em inglês. Cabe na mesma tabela de idiomas do item acima.
 - **Tipagem forte opcional (resto)**: já existe no `#decl`, nos parâmetros e no retorno (`{int}`, `(int, str)`, `map {str: int}`). Falta: tipo de `heap`, `fila` e `grafo`, e tipo na primeira atribuição (`v: {int} = {}`), se fizer falta.

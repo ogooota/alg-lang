@@ -76,6 +76,7 @@ static const char *BUILTIN_NAMES[][2] = {
     [BUILTIN_RMQ] = {"rmq", "rmq"},
     [BUILTIN_TEXTO] = {"texto", "str"},
     [BUILTIN_LER_LINHA] = {"ler_linha", "read_line"},
+    [BUILTIN_CONTA_PRIMOS] = {"conta_primos", "count_primes"},
 };
 
 /** Qual nome nativo (ler, soma, heap...) é esse nome no idioma dado. */

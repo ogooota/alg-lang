@@ -791,6 +791,109 @@ static inline void sieve_cross_off(uint8_t *restrict segment, int64_t low, int64
 }
 
 /** Primos até limit: Eratóstenes segmentado com roda 30, pré-crivo de 7..17 e extração por ctz. */
+/* n / d por ponto flutuante (bem mais barato que a divisão de 64 bits), corrigido para ser exato */
+static inline int64_t divide_fast(int64_t n, int64_t d, double inverse)
+{
+    int64_t q = (int64_t)((double)n * inverse);
+
+    while (q * d > n)
+    {
+        q--;
+    }
+
+    while ((q + 1) * d <= n)
+    {
+        q++;
+    }
+
+    return q;
+}
+
+/**
+ * Quantos primos ≤ n, sem listar (Lucy_Hedgehog, O(n^(3/4)) tempo e O(√n) memória):
+ * S(v) = quantos de 2..v sobrevivem ao crivo pelos primos já vistos; só os v = n / i importam.
+ */
+static int64_t count_primes(int64_t n)
+{
+    if (n < 2)
+    {
+        return 0;
+    }
+
+    int64_t root = (int64_t)sqrt((double)n);
+
+    while (root * root > n)
+    {
+        root--;
+    }
+
+    while ((root + 1) * (root + 1) <= n)
+    {
+        root++;
+    }
+
+    /* small[v] = S(v) para v ≤ √n; large[i] = S(n / i) para i ≤ √n */
+    int64_t *small = malloc((size_t)(root + 2) * sizeof *small);
+    int64_t *large = malloc((size_t)(root + 2) * sizeof *large);
+    double *inverse = malloc((size_t)(root + 2) * sizeof *inverse);
+
+    if (!small || !large || !inverse)
+    {
+        runtime_error(0, "memória esgotada");
+    }
+
+    for (int64_t v = 0; v <= root; v++)
+    {
+        small[v] = v - 1;
+    }
+
+    small[0] = 0;
+
+    for (int64_t i = 1; i <= root; i++)
+    {
+        large[i] = n / i - 1;
+        inverse[i] = 1.0 / (double)i;
+    }
+
+    for (int64_t p = 2; p <= root; p++)
+    {
+        /* p é primo quando o crivo pelos menores não o tirou */
+        if (small[p] == small[p - 1])
+        {
+            continue;
+        }
+
+        int64_t before = small[p - 1];
+        int64_t square = p * p;
+        int64_t limit = n / square < root ? n / square : root;
+        int64_t direct = root / p < limit ? root / p : limit;
+
+        for (int64_t i = 1; i <= direct; i++)
+        {
+            large[i] -= large[i * p] - before;
+        }
+
+        double inverse_p = 1.0 / (double)p;
+
+        for (int64_t i = direct + 1; i <= limit; i++)
+        {
+            int64_t d = i * p;
+            large[i] -= small[divide_fast(n, d, inverse[i] * inverse_p)] - before;
+        }
+
+        for (int64_t v = root; v >= square; v--)
+        {
+            small[v] -= small[divide_fast(v, p, inverse_p)] - before;
+        }
+    }
+
+    int64_t total = large[1];
+    free(small);
+    free(large);
+    free(inverse);
+    return total;
+}
+
 static int64_t *sieve_primes(int64_t limit, int64_t *count, int line)
 {
     if (limit < 0)

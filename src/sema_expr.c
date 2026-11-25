@@ -798,6 +798,11 @@ Type *check_expression(Expression *expr)
 
             return expr->type = &INT_TYPE;
 
+        case BUILTIN_CONTA_PRIMOS:
+            check_argument_count(expr, 1, 1);
+            check_int(expr->arguments.items[0]);
+            return expr->type = &INT_TYPE;
+
         case BUILTIN_CRIVO:
         {
             check_argument_count(expr, 1, 1);
