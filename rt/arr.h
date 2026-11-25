@@ -691,3 +691,53 @@ static void FN(_sort)(ARRAY array, int descending, int line)
         }
     }
 }
+
+/**
+ * Compressão de coordenadas: a posição de cada valor entre os valores distintos ordenados
+ * (0, 1, 2...). Ordena uma cópia, tira os repetidos e acha cada um por busca binária.
+ */
+static int64_t *FN(_ranks)(ARRAY array, int line)
+{
+    if (ALG_CHECK && array.dimension_count > 1)
+    {
+        runtime_error(line, "comprimir() funciona com vetor 1D");
+    }
+
+    ARRAY sorted = FN(_copy)(array);
+    int64_t distinct = 0;
+    int64_t *ranks = arena_allocate((size_t)(array.length + 1) * sizeof *ranks);
+
+    FN(_sort)(sorted, 0, line);
+
+    for (int64_t i = 0; i < sorted.length; i++)
+    {
+        if (distinct == 0 || LESS(sorted.data[distinct - 1], sorted.data[i]))
+        {
+            sorted.data[distinct++] = sorted.data[i];
+        }
+    }
+
+    for (int64_t i = 0; i < array.length; i++)
+    {
+        int64_t low = 0;
+        int64_t high = distinct;
+
+        while (low < high)
+        {
+            int64_t middle = low + (high - low) / 2;
+
+            if (LESS(sorted.data[middle], array.data[i]))
+            {
+                low = middle + 1;
+            }
+            else
+            {
+                high = middle;
+            }
+        }
+
+        ranks[i] = low;
+    }
+
+    return ranks;
+}

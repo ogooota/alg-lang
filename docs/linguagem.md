@@ -65,8 +65,8 @@ make test                     # roda tests/cases/*.alg
 | Pilha | o próprio vetor: `adicionar`, `remover_ultimo` | ✅ |
 | Grafo | `grafo(n)`, `grafo(n, dirigido)`; `g.aresta(u, v[, peso])`; `para v em g.vizinhos(u)`, `para [v, w] em g.vizinhos(u)` | ✅ |
 | Registros | `tipo Aresta { peso: int; u: int; v: int }` (en: `type`), como a `struct` do C++, com os campos tipados; `Aresta(5, 1, 2)` constrói, `e.peso` lê e muda o campo. Por dentro é uma tupla com nomes: ordena campo a campo na ordem declarada, serve de chave de mapa, vai em heap, desmonta com `[w, u, v] = e` e é tipo escrito (`#decl arestas: {Aresta}`, `fn f(e: Aresta) -> Aresta`; `ler(n, arestas[0..n])` lê os campos em ordem) | ✅ |
-| Técnicas nativas | `prefixo`, `busca`, `mdc`, `mmc`, `potmod`, `crivo`, `conta_primos`, `conjuntos`, `fenwick`, `segtree`, `rmq` (seção abaixo) | ✅ |
-| Adiado | `rep(ação, parada)`, tradutor pt↔en, compressão de coordenadas | — |
+| Técnicas nativas | `prefixo`, `busca`, `mdc`, `mmc`, `potmod`, `crivo`, `conta_primos`, `comprimir`, `conjuntos`, `fenwick`, `segtree`, `rmq` (seção abaixo) | ✅ |
+| Adiado | `rep(ação, parada)`, tradutor pt↔en | — |
 
 ## O que já dá para escrever (marco 1)
 
@@ -169,6 +169,7 @@ Técnicas que aparecem em quase toda maratona viram parte da linguagem: menos c�
 | `potmod(b, e, m)` | `powmod(b, e, m)` | `b^e mod m` por exponenciação rápida (resultado em `[0, m)`) | O(log e) |
 | `crivo(n)` | `sieve(n)` | vetor com os primos `≤ n`, em ordem | O(n log log n) |
 | `conta_primos(n)` | `count_primes(n)` | quantos primos `≤ n`, sem montar o vetor (Lucy_Hedgehog): n = 10¹¹ em ~0,5 s e O(√n) de memória | O(n^(3/4)) |
+| `comprimir(v)` | `compress(v)` | compressão de coordenadas: vetor com a posição de cada valor entre os distintos ordenados (`{1000, -5, 7, 7}` → `{2, 0, 1, 1}`); funciona com números, strings e tuplas | O(n log n) |
 
 ### Estruturas
 

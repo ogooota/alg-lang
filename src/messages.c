@@ -297,6 +297,8 @@ static const char *const MESSAGES[][2] = {
      "a record has at least 2 fields"},
     {"campo de registro guarda int, real, str ou tupla",
      "a record field holds int, real, str or a tuple"},
+    {"comprimir() funciona com vetor 1D",
+     "compress() works on a 1D array"},
 };
 
 /** O texto no idioma do programa (o português é a chave; sem tradução, fica o original). */

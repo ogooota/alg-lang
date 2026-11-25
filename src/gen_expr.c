@@ -570,6 +570,20 @@ void gen_call(TextBuffer *out, Expression *expr)
             text_appendf(out, "%d)", expr->line);
             return;
 
+        case BUILTIN_COMPRIMIR:
+        {
+            /* as posições vêm da arena; _lit monta o vetor de 64 bits com elas */
+            Type *source = expr->arguments.items[0]->type;
+            int temp_id = temp_counter++;
+
+            text_appendf(out, "({ Array%s _c%d = ", array_pascal(source), temp_id);
+            gen_expression(out, expr->arguments.items[0]);
+            text_appendf(out, "; array_%s_lit(_c%d.length, array_%s_ranks(_c%d, %d)); })",
+                         array_suffix(expr->type), temp_id, array_suffix(source), temp_id,
+                         expr->line);
+            return;
+        }
+
         case BUILTIN_CONTA_PRIMOS:
             text_append(out, "count_primes(");
             gen_expression(out, expr->arguments.items[0]);

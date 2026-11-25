@@ -444,7 +444,8 @@ typedef enum
     BUILTIN_RMQ,
     BUILTIN_TEXTO,
     BUILTIN_LER_LINHA,
-    BUILTIN_CONTA_PRIMOS
+    BUILTIN_CONTA_PRIMOS,
+    BUILTIN_COMPRIMIR
 } Builtin;
 
 /* métodos das estruturas: o nome depende do tipo do objeto */

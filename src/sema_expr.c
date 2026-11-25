@@ -906,6 +906,22 @@ Type *check_expression(Expression *expr)
 
             return expr->type = &INT_TYPE;
 
+        case BUILTIN_COMPRIMIR:
+        {
+            check_argument_count(expr, 1, 1);
+            Type *source = check_array(expr->arguments.items[0]);
+
+            if (source->dimension_count != 1)
+            {
+                FAIL_AT_NODE(expr->arguments.items[0], "comprimir() funciona com vetor 1D");
+            }
+
+            resolve_unknown(source->element);
+            Type *cell = new_structure_cell();
+            cell->kind = TYPE_INT;
+            return expr->type = array_type(cell, 1);
+        }
+
         case BUILTIN_CONTA_PRIMOS:
             check_argument_count(expr, 1, 1);
             check_int(expr->arguments.items[0]);

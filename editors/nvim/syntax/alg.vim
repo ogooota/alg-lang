@@ -30,8 +30,8 @@ syntax match algFloat "\<\d\+\.\d\+\>"
 syntax keyword algType int real int32
 
 " nomes nativos
-syntax keyword algBuiltin ler escrever copia soma min max ordenar heap fila grafo mapa conj prefixo busca mdc mmc potmod crivo conta_primos conjuntos fenwick segtree rmq texto ler_linha
-syntax keyword algBuiltin read write copy sum sort queue graph map set prefix search gcd lcm powmod sieve count_primes dsu str read_line
+syntax keyword algBuiltin ler escrever copia soma min max ordenar heap fila grafo mapa conj prefixo busca mdc mmc potmod crivo conta_primos comprimir conjuntos fenwick segtree rmq texto ler_linha
+syntax keyword algBuiltin read write copy sum sort queue graph map set prefix search gcd lcm powmod sieve count_primes compress dsu str read_line
 syntax keyword algWord maior dirigido greater directed
 
 " métodos das estruturas (depois do ponto)

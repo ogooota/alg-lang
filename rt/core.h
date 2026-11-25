@@ -123,6 +123,7 @@ static const char *const RUNTIME_MESSAGES[][2] = {
     {"não dá para adicionar numa fatia ou num vetor de várias dimensões", "cannot add to a slice or to a multi-dimensional array"},
     {"não dá para remover de uma fatia", "cannot remove from a slice"},
     {"ordenar() funciona com vetor 1D", "sort() works on a 1D array"},
+    {"comprimir() funciona com vetor 1D", "compress() works on a 1D array"},
     {"potmod com expoente negativo (%lld)", "powmod with a negative exponent (%lld)"},
     {"potmod com módulo %lld (precisa ser positivo)", "powmod with modulus %lld (it must be positive)"},
     {"remover() de heap vazio", "pop() from an empty heap"},

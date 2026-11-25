@@ -107,6 +107,7 @@ TECHNIQUES = [
     ("gcd, lcm", "mdc, mmc", t("greatest common divisor and least common multiple", "máximo divisor comum e mínimo múltiplo comum"), "O(log)"),
     ("powmod(b, e, m)", "potmod(b, e, m)", t("<code>b<sup>e</sup> mod m</code> by fast exponentiation, no overflow", "<code>b<sup>e</sup> mod m</code> por exponenciação rápida, sem estouro"), "O(log e)"),
     ("sieve(n)", "crivo(n)", t("array of the primes up to <code>n</code>", "vetor com os primos até <code>n</code>"), "O(n log log n)"),
+    ("compress(v)", "comprimir(v)", t("coordinate compression: each value becomes its rank among the distinct sorted values", "compressão de coordenadas: cada valor vira a posição dele entre os distintos ordenados"), "O(n log n)"),
     ("count_primes(n)", "conta_primos(n)", t("how many primes up to <code>n</code>, without the array: <code>n</code> = 10¹¹ in about half a second", "quantos primos até <code>n</code>, sem montar o vetor: <code>n</code> = 10¹¹ em cerca de meio segundo"), "O(n^(3/4))"),
     ("dsu(n)", "conjuntos(n)", t("union-find: <code>merge(a, b)</code>, <code>find(a)</code>, <code>same(a, b)</code>, <code>size(a)</code>, <code>groups()</code>", "union-find: <code>unir(a, b)</code>, <code>achar(a)</code>, <code>juntos(a, b)</code>, <code>tam(a)</code>, <code>grupos()</code>"), "≈O(1)"),
     ("fenwick(n)", "fenwick(n)", t("<code>add(i, x)</code> and <code>sum(l, r)</code> over <code>[l, r)</code>", "<code>somar(i, x)</code> e <code>soma(l, r)</code> em <code>[l, r)</code>"), "O(log n)"),
