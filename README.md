@@ -125,12 +125,12 @@ make test                    # run the test suite
 
 ## Learn more
 
-- **Guide** with seven contest problems side by side with C++: [`docs/guia.html`](docs/guia.html) (English, with a Portuguese version)
+- **Guide** with contest problems side by side with C++: [`docs/guia.html`](docs/guia.html) (English, with a Portuguese version)
 - **Specification** and feature status: [`docs/linguagem.md`](docs/linguagem.md) (Portuguese)
 - **How the compiler works**: [`docs/compilador.md`](docs/compilador.md)
 - **Editor support**: syntax highlighting, indentation and a color theme for Neovim in [`editors/nvim/`](editors/nvim/)
 
 ## Status
 
-alg is young. Sets, records and step/descending loops are designed but not implemented yet;
-runtime error messages are in Portuguese for now. Issues and ideas are welcome.
+alg is young. Sets and records are designed but not implemented yet. Error messages follow the
+program's `#lang` (English or Portuguese). Issues and ideas are welcome.

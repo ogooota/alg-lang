@@ -70,32 +70,32 @@ const char *token_name(TokenKind kind)
     switch (kind)
     {
     case TOKEN_EOF:
-        return "fim do arquivo";
+        return message_text("fim do arquivo");
 
     case TOKEN_NEWLINE:
-        return "fim de linha";
+        return message_text("fim de linha");
 
     case TOKEN_INDENT:
-        return "indentação";
+        return message_text("indentação");
 
     case TOKEN_DEDENT:
-        return "fim de bloco";
+        return message_text("fim de bloco");
 
     case TOKEN_INT:
     case TOKEN_REAL:
-        return "número";
+        return message_text("número");
 
     case TOKEN_CHAR:
-        return "caractere";
+        return message_text("caractere");
 
     case TOKEN_STRING:
-        return "texto";
+        return message_text("texto");
 
     case TOKEN_NAME:
-        return "nome";
+        return message_text("nome");
 
     case KEYWORD_DECL:
-        return "#decl";
+        return message_text("#decl");
 
     default:
         break;
@@ -200,6 +200,7 @@ static void lex_language_line(Lexer *lexer)
     else if (!strncmp(lexer->cursor, "en", 2))
     {
         lexer->language = LANG_EN;
+        message_language = LANG_EN;
     }
     else
     {

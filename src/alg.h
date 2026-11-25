@@ -158,6 +158,10 @@ typedef enum
     LANG_EN
 } Language;
 
+/* idioma das mensagens de erro (o do #lang do programa) */
+extern Language message_language;
+const char *message_text(const char *portuguese);
+
 TokenList tokenize(const char *source, Language *language);
 TokenKind keyword_of(const char *name, Language language);
 const char *keyword_spelling(TokenKind kind);

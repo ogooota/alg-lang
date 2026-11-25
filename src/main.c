@@ -150,7 +150,7 @@ int main(int argc, char **argv)
 
     if (exit_code != 0)
     {
-        fprintf(stderr, "alg: o compilador C falhou (isso é bug do alg, por favor reporte)\n");
+        fputs(message_text("alg: o compilador C falhou (isso é bug do alg, por favor reporte)\n"), stderr);
         return 1;
     }
 

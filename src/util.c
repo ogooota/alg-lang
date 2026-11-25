@@ -74,8 +74,9 @@ _Noreturn void fail_at(int line, int column, const char *format, ...)
     va_list arguments;
 
     va_start(arguments, format);
-    fprintf(stderr, "%s:%d:%d: erro: ", source_file_name, line, column);
-    vfprintf(stderr, format, arguments);
+    fprintf(stderr, "%s:%d:%d: %s: ", source_file_name, line, column,
+            message_language == LANG_EN ? "error" : "erro");
+    vfprintf(stderr, message_text(format), arguments);
     fputc('\n', stderr);
     va_end(arguments);
     exit(1);

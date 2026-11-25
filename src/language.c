@@ -34,11 +34,11 @@ TokenKind keyword_of(const char *name, Language language)
     return TOKEN_NAME;
 }
 
-/** Como a palavra-chave se escreve (em português; em inglês se só existe lá). */
+/** Como a palavra-chave se escreve no idioma do programa (no outro, se só existe lá). */
 const char *keyword_spelling(TokenKind kind)
 {
-    const char *portuguese = KEYWORDS[LANG_PT][kind - KEYWORD_SE];
-    return portuguese ? portuguese : KEYWORDS[LANG_EN][kind - KEYWORD_SE];
+    const char *own = KEYWORDS[message_language][kind - KEYWORD_SE];
+    return own ? own : KEYWORDS[!message_language][kind - KEYWORD_SE];
 }
 
 /* ---------- nomes nativos: [pt, en] ---------- */

@@ -101,13 +101,59 @@ static void write_real(double number)
 
 /* ---------- erros ---------- */
 
+#ifdef ALG_ENGLISH
+/* mensagens do runtime em inglês (programa #lang en): o texto em português é a chave */
+static const char *const RUNTIME_MESSAGES[][2] = {
+    {"%lld não cabe em int32", "%lld does not fit in int32"},
+    {"a entrada acabou antes do esperado", "the input ended earlier than expected"},
+    {"conjuntos(%lld): tamanho inválido", "dsu(%lld): invalid size"},
+    {"consulta(%lld, %lld) inválida (intervalo vazio ou fora de 0..%lld)", "query(%lld, %lld) is invalid (empty range or outside 0..%lld)"},
+    {"crivo(%lld): o limite precisa ser >= 0", "sieve(%lld): the limit must be >= 0"},
+    {"desenfileirar() de fila vazia", "pop() from an empty queue"},
+    {"divisão por zero", "division by zero"},
+    {"esperava um número inteiro na entrada, veio '%s'", "expected an integer in the input, got '%s'"},
+    {"esperava um número real na entrada, veio '%s'", "expected a real number in the input, got '%s'"},
+    {"fatia %lld..%lld fora de 0..%lld", "slice %lld..%lld outside 0..%lld"},
+    {"fenwick(%lld): tamanho negativo", "fenwick(%lld): negative size"},
+    {"frente() de fila vazia", "front() of an empty queue"},
+    {"grafo com %lld vértices", "graph with %lld vertices"},
+    {"max de vetor vazio", "max of an empty array"},
+    {"memória esgotada", "out of memory"},
+    {"min de vetor vazio", "min of an empty array"},
+    {"não dá para adicionar numa fatia ou num vetor de várias dimensões", "cannot add to a slice or to a multi-dimensional array"},
+    {"não dá para remover de uma fatia", "cannot remove from a slice"},
+    {"ordenar() funciona com vetor 1D", "sort() works on a 1D array"},
+    {"potmod com expoente negativo (%lld)", "powmod with a negative exponent (%lld)"},
+    {"potmod com módulo %lld (precisa ser positivo)", "powmod with modulus %lld (it must be positive)"},
+    {"remover() de heap vazio", "pop() from an empty heap"},
+    {"remover_ultimo em vetor vazio", "pop() on an empty array"},
+    {"resto de divisão por zero", "remainder of division by zero"},
+    {"soma(%lld, %lld) fora de 0..%lld", "sum(%lld, %lld) outside 0..%lld"},
+    {"tamanho negativo (%lld) ao criar vetor", "negative size (%lld) when creating an array"},
+    {"topo() de heap vazio", "top() of an empty heap"},
+    {"índice %lld fora de 0..%lld", "index %lld outside 0..%lld"},
+};
+#endif
 __attribute__((noreturn, format(printf, 2, 3))) static void runtime_error(int line,
                                                                           const char *format, ...)
 {
     va_list arguments;
 
     flush_output();
+#ifdef ALG_ENGLISH
+    fprintf(stderr, "error (line %d): ", line);
+
+    for (size_t i = 0; i < sizeof RUNTIME_MESSAGES / sizeof *RUNTIME_MESSAGES; i++)
+    {
+        if (!strcmp(RUNTIME_MESSAGES[i][0], format))
+        {
+            format = RUNTIME_MESSAGES[i][1];
+            break;
+        }
+    }
+#else
     fprintf(stderr, "erro (linha %d): ", line);
+#endif
     va_start(arguments, format);
     vfprintf(stderr, format, arguments);
     va_end(arguments);

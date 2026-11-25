@@ -427,6 +427,12 @@ void generate_c(Program *parsed_program, TextBuffer *out)
         text_append(out, PRAGMAS);
     }
 
+    /* #lang en: o runtime mostra os erros em inglês */
+    if (parsed_program->language == LANG_EN)
+    {
+        text_append(out, "#define ALG_ENGLISH 1\n");
+    }
+
     text_appendf(out, "%.*s", (int)rt_core_h_len, (const char *)rt_core_h);
 
     for (int kind_index = 0; kind_index < ELEMENT_KIND_COUNT; kind_index++)

@@ -47,6 +47,7 @@ make test                     # roda tests/cases/*.alg
 | Programa | sem `main`: o topo do arquivo é o programa; `ret` encerra | ✅ |
 | Entrada | `ler(a, b, v[0..n])`: da esquerda para a direita, cria o vetor se preciso | ✅ |
 | Saída | `escrever(a, b)` separa por espaço e sempre termina com `\n` | ✅ |
+| Mensagens de erro | no idioma do `#lang`: `erro (linha 3): índice 5 fora de 0..2` em pt, `error (line 3): index 5 outside 0..2` em en (compilação e execução) | ✅ |
 | Memória | arena por execução (tudo é liberado no fim) | ✅ |
 | Pilha | o programa roda com 256 MB de pilha (recursão funda) | ✅ |
 | Unicode | `≤ ≥ ≠ ← ∈` como sinônimos opcionais | ✅ |
@@ -237,6 +238,7 @@ As palavras marcadas com ⏳ já são reservadas, para que nenhum programa preci
 | Arquivo | Papel |
 |---|---|
 | `src/lex.c` | tokens, indentação → INDENT/DEDENT, palavras por idioma |
+| `src/messages.c` | mensagens de erro em inglês (o texto em português é a chave); as do runtime ficam em `rt/core.h` |
 | `src/parse.c` | AST (descida recursiva) |
 | `src/sema.c` | escopos, inferência de tipos, uma versão de função por combinação de tipos |
 | `src/gen.c` | AST tipada → C |
@@ -295,6 +297,5 @@ Todo C do projeto segue estas regras (o `.clang-format` cuida da formatação; `
 
 ## TODO
 
-- **Idiomas configuráveis**: hoje pt e en estão em tabelas dentro do código (`src/lex.c` e `src/parse.c`). A ideia é tirar as palavras-chave, os nomes nativos e os métodos para arquivos de idioma (um por idioma), para que qualquer pessoa traduza a linguagem só criando uma configuração nova (`#lang es`, `#lang fr`...). Importante quando o projeto virar open source.
-- **Mensagens de erro em inglês**: hoje os erros do compilador (`fail_at` em `src/lex.c`, `src/parse.c`, `src/sema.c`) e do runtime (`runtime_error` em `rt/*.h`) saem só em português. Com `#lang en` (a língua principal), devem sair em inglês. Cabe na mesma tabela de idiomas do item acima.
+- **Idiomas configuráveis**: hoje pt e en estão em tabelas dentro do código (`src/language.c`, e as mensagens em `src/messages.c` e `rt/core.h`). A ideia é tirar as palavras-chave, os nomes nativos e os métodos para arquivos de idioma (um por idioma), para que qualquer pessoa traduza a linguagem só criando uma configuração nova (`#lang es`, `#lang fr`...). Importante quando o projeto virar open source.
 - **Tipagem forte opcional (resto)**: já existe no `#decl`, nos parâmetros e no retorno, para todos os tipos. Falta só o tipo na primeira atribuição (`v: {int} = {}`), se fizer falta.

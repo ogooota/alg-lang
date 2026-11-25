@@ -84,62 +84,62 @@ const char *type_name(Type *type)
     switch (type->kind)
     {
     case TYPE_UNKNOWN:
-        return "desconhecido";
+        return message_text("desconhecido");
 
     case TYPE_INT:
-        return "inteiro";
+        return message_text("inteiro");
 
     case TYPE_REAL:
-        return "real";
+        return message_text("real");
 
     case TYPE_STRING:
-        return "texto";
+        return message_text("texto");
 
     case TYPE_CHAR:
-        return "caractere";
+        return message_text("caractere");
 
     case TYPE_VOID:
-        return "nada";
+        return message_text("nada");
 
     case TYPE_ARRAY:
         if (type->dimension_count == 1 && cell_root(type->element)->kind == TYPE_CHAR)
         {
-            return "texto";
+            return message_text("texto");
         }
 
-        snprintf(slot, 64, "vetor %dD de %s", type->dimension_count, type_name(type->element));
+        snprintf(slot, 64, message_text("vetor %dD de %s"), type->dimension_count, type_name(type->element));
         return slot;
 
     case TYPE_TUPLE:
-        snprintf(slot, 64, "tupla de %d valores", type->field_count);
+        snprintf(slot, 64, message_text("tupla de %d valores"), type->field_count);
         return slot;
 
     case TYPE_HEAP:
-        return "heap";
+        return message_text("heap");
 
     case TYPE_QUEUE:
-        return "fila";
+        return message_text("fila");
 
     case TYPE_GRAPH:
-        return "grafo";
+        return message_text("grafo");
 
     case TYPE_MAP:
-        return "mapa";
+        return message_text("mapa");
 
     case TYPE_DSU:
-        return "conjuntos";
+        return message_text("conjuntos");
 
     case TYPE_FENWICK:
-        return "fenwick";
+        return message_text("fenwick");
 
     case TYPE_SEGTREE:
-        return "segtree";
+        return message_text("segtree");
 
     case TYPE_RMQ:
-        return "rmq";
+        return message_text("rmq");
     }
 
-    return "?";
+    return message_text("?");
 }
 
 /** Diz se duas tuplas têm o mesmo número de campos com os mesmos tipos. */
